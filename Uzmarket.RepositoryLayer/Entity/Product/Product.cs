@@ -17,7 +17,7 @@ namespace UzMarket.RepositoryLayer.Entity
         public string Name { get; set; } = null!;
 
         [Column("DESCRIPTION")]
-        public string Description { get; set; } = null!;
+        public string? Description { get; set; }
 
         [Column("PRICE")]
         public decimal Price { get; set; }

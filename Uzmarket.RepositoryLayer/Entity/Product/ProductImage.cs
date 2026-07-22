@@ -20,12 +20,5 @@ namespace UzMarket.RepositoryLayer.Entity
 
         [Column("SORT_ORDER")]
         public int SortOrder { get; set; } //Tartib raqam
-
-        [Column("PRODUCT_ID")]
-        public long ProductId { get; set; }
-
-        // Navigation properties
-        public Product Product { get; set; } = null!;
-
     }
 }

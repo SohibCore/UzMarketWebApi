@@ -107,42 +107,43 @@ namespace UzMarket.ServiceLayer.Services.CartServices
 
             cart.StatusId = (int)StatusIdConst.MODIFIED;
             cart.ModifiedAt = DateTime.UtcNow;
+            cart.ModifiedUserId = _service.UserId;
 
-            foreach (var itemDto in dto.Tables)
+            var incomingItems = (dto.Tables ?? new List<UpdateCartItemDlDto>())
+                .Where(x => x.Quantity > 0)
+                .Select(x => new CartItem
+                {
+                    ProductId = x.ProductId,
+                    Quantity = x.Quantity
+                })
+                .ToList();
+
+            if (cart.Tables.Any())
             {
-                if (itemDto.Id.HasValue)
-                {
-                    var existingItem = cart.Tables.FirstOrDefault(x => x.Id == itemDto.Id.Value);
-                    if (existingItem == null)
-                        throw new Exception($"CartItem {itemDto.Id} not found");
-
-                    existingItem.Quantity = itemDto.Quantity;
-                }
-                else
-                {
-                    var newItem = new CartItem
-                    {
-                        ProductId = itemDto.ProductId,
-                        Quantity = itemDto.Quantity
-                    };
-                    cart.Tables.Add(newItem);
-                }
+                _context.CartItems.RemoveRange(cart.Tables);
+                cart.Tables.Clear();
             }
-                await _context.SaveChangesAsync(cancellationToken);
 
-                return new CartDto
-                {
-                    Id = cart.Id,
-                    StatusId = cart.StatusId,
-                    Tables = cart.Tables.Select(x => new CartItemDto
-                    {
-                        Id = x.Id,
-                        CartId = x.CartId,
-                        ProductId = x.ProductId,
-                        Quantity = x.Quantity
-                    }).ToList()
-                };
+            foreach (var item in incomingItems)
+            {
+                cart.Tables.Add(item);
             }
+
+            await _context.SaveChangesAsync(cancellationToken);
+
+            return new CartDto
+            {
+                Id = cart.Id,
+                StatusId = cart.StatusId,
+                Tables = cart.Tables.Select(x => new CartItemDto
+                {
+                    Id = x.Id,
+                    CartId = x.CartId,
+                    ProductId = x.ProductId,
+                    Quantity = x.Quantity
+                }).ToList()
+            };
+        }
 
         public async Task<string> DeleteAsync(long Id, CancellationToken cancellationToken)
         {
