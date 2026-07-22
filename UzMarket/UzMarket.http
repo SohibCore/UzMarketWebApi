@@ -1,0 +1,6 @@
+@UzMarket_HostAddress = http://localhost:5089
+
+GET {{UzMarket_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

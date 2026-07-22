@@ -1,0 +1,63 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.37111.16
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UzMarket.WebApi", "UzMarket\UzMarket.WebApi.csproj", "{3636DEE0-5CAD-47B1-AD75-C84D791457D8}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "RepositoryLayer", "RepositoryLayer", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UzMarket.RepositoryLayer", "Uzmarket.RepositoryLayer\UzMarket.RepositoryLayer.csproj", "{80D41E66-CA4D-402A-8D80-AA07E16D0F68}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ServiceLayer", "ServiceLayer", "{BE570FE2-44DD-4374-BB29-9BA1676DE193}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UzMarket.ServiceLayer", "UzMarket.Service\UzMarket.ServiceLayer.csproj", "{752FCB4E-C381-4248-8B3C-9889B8749596}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Libs", "Libs", "{86CF21BE-6F35-4490-A1B9-F1B5B5D515B8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UzMarket.Core", "UzMarket.Core\UzMarket.Core.csproj", "{2A35F396-9511-4CA2-8B57-9C34B5B92B51}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "FluentValidator", "FluentValidator", "{63663CA7-D0A3-4259-B8EE-C3D039FDE242}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UzMarket.Validators", "UzMarket.Validators\UzMarket.Validators.csproj", "{65A6136F-E4A3-497E-BFEE-57044161B581}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3636DEE0-5CAD-47B1-AD75-C84D791457D8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3636DEE0-5CAD-47B1-AD75-C84D791457D8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3636DEE0-5CAD-47B1-AD75-C84D791457D8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3636DEE0-5CAD-47B1-AD75-C84D791457D8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{80D41E66-CA4D-402A-8D80-AA07E16D0F68}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{80D41E66-CA4D-402A-8D80-AA07E16D0F68}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{80D41E66-CA4D-402A-8D80-AA07E16D0F68}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{80D41E66-CA4D-402A-8D80-AA07E16D0F68}.Release|Any CPU.Build.0 = Release|Any CPU
+		{752FCB4E-C381-4248-8B3C-9889B8749596}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{752FCB4E-C381-4248-8B3C-9889B8749596}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{752FCB4E-C381-4248-8B3C-9889B8749596}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{752FCB4E-C381-4248-8B3C-9889B8749596}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2A35F396-9511-4CA2-8B57-9C34B5B92B51}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2A35F396-9511-4CA2-8B57-9C34B5B92B51}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2A35F396-9511-4CA2-8B57-9C34B5B92B51}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2A35F396-9511-4CA2-8B57-9C34B5B92B51}.Release|Any CPU.Build.0 = Release|Any CPU
+		{65A6136F-E4A3-497E-BFEE-57044161B581}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{65A6136F-E4A3-497E-BFEE-57044161B581}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{65A6136F-E4A3-497E-BFEE-57044161B581}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{65A6136F-E4A3-497E-BFEE-57044161B581}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{80D41E66-CA4D-402A-8D80-AA07E16D0F68} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{752FCB4E-C381-4248-8B3C-9889B8749596} = {BE570FE2-44DD-4374-BB29-9BA1676DE193}
+		{2A35F396-9511-4CA2-8B57-9C34B5B92B51} = {86CF21BE-6F35-4490-A1B9-F1B5B5D515B8}
+		{65A6136F-E4A3-497E-BFEE-57044161B581} = {63663CA7-D0A3-4259-B8EE-C3D039FDE242}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F1993964-DD51-44FB-94D0-CBAF72E6CE2B}
+	EndGlobalSection
+EndGlobal
