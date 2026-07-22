@@ -1,8 +1,9 @@
-﻿namespace UzMarket.ServiceLayer.Services.UserServices
+﻿namespace UzMarket.ServiceLayer.MediatorServices.UserServices.Dtos
 {
-    public class UserListDto
+    public class UserDto
     {
         public long Id { get; set; }
+        public int StatusId { get; set; }
         public string UserName { get; set; } = null!;
         public string FullName { get; set; } = null!;
         public string Password { get; set; } = null!;

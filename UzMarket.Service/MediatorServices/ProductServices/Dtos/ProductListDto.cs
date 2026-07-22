@@ -1,6 +1,7 @@
-﻿namespace UzMarket.ServiceLayer.Services.ProductServices
+﻿using System;
+namespace UzMarket.ServiceLayer.MediatorServices.ProductServices.Dtos
 {
-    public class ProductDto
+    public class ProductListDto
     {
         public long Id { get; set; }
         public string Name { get; set; } = null!;

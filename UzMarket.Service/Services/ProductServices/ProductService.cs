@@ -3,8 +3,9 @@ using UzMarket.Core;
 using UzMarket.RepositoryLayer.DataBase;
 using UzMarket.RepositoryLayer.Dtos.ProductDtos;
 using UzMarket.RepositoryLayer.Entity;
+using UzMarket.ServiceLayer.MediatorServices.ProductServices.Dtos;
+using UzMarket.ServiceLayer.MediatorServices.ProductServices.Queries.QueryObejcts;
 using UzMarket.ServiceLayer.Security;
-using UzMarket.ServiceLayer.Services.ProductServices.QueryObejcts;
 
 namespace UzMarket.ServiceLayer.Services.ProductServices
 {

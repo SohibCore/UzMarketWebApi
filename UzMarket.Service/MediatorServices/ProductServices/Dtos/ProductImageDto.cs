@@ -1,4 +1,4 @@
-﻿namespace UzMarket.ServiceLayer.Services.ProductServices
+﻿namespace UzMarket.ServiceLayer.MediatorServices.ProductServices.Dtos
 {
     public class ProductImageDto
     {

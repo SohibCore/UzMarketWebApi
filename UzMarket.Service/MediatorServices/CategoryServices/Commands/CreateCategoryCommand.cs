@@ -25,7 +25,9 @@ namespace UzMarket.ServiceLayer.MediatorServices.CategoryServices.Commands
             var category = new Category
             {
                 Name = request.dto.Name,
+#pragma warning disable CS8601
                 Description = request.dto.Description,
+#pragma warning restore CS8601
                 ParentCategoryId = request.dto.ParentCategoryId,
 
                 StatusId = (int)StatusIdConst.CREATED,

@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UzMarket.RepositoryLayer.Dtos.ProductDtos;
+using UzMarket.ServiceLayer.MediatorServices.ProductServices.Dtos;
 using UzMarket.ServiceLayer.Services.ProductServices;
 
 namespace UzMarket.WebApi.Controllers

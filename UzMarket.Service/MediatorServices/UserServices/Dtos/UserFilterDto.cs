@@ -1,4 +1,4 @@
-﻿namespace UzMarket.ServiceLayer.Services.UserServices
+﻿namespace UzMarket.ServiceLayer.MediatorServices.UserServices.Dtos
 {
     public class UserFilterDto
     {
