@@ -1,6 +1,6 @@
-﻿namespace UzMarket.ServiceLayer.Services.OrderServices
+﻿namespace UzMarket.ServiceLayer.MediatorServices.OrderServices.Dtos
 {
-    public class OrderDto
+    public class OrderListDto
     {
         public long Id { get; set; }
         public long UserId { get; set; }
@@ -9,6 +9,6 @@
         public int OrderStatusId { get; set; }
         public int ShippingAddressId { get; set; }
 
-        public ICollection<OrderItemDto> Tables { get; set; } = new List<OrderItemDto>();
+        public ICollection<OrderItemDto> Items { get; set; } = new List<OrderItemDto>();
     }
 }

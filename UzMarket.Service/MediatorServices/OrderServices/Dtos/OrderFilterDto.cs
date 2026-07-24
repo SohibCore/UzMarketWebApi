@@ -1,4 +1,4 @@
-﻿namespace UzMarket.ServiceLayer.Services.OrderServices
+﻿namespace UzMarket.ServiceLayer.MediatorServices.OrderServices.Dtos
 {
     public class OrderFilterDto
     {

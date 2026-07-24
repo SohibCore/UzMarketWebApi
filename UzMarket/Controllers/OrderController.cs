@@ -1,7 +1,8 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using UzMarket.RepositoryLayer.Dtos.OrderDtos;
 using UzMarket.ServiceLayer.Services.OrderServices;
+using UzMarket.ServiceLayer.MediatorServices.OrderServices.Dtos;
 
 namespace UzMarket.WebApi.Controllers
 {

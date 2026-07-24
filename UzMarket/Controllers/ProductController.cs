@@ -1,7 +1,10 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using UzMarket.RepositoryLayer.Dtos.ProductDtos;
 using UzMarket.ServiceLayer.MediatorServices.ProductServices.Dtos;
+using UzMarket.ServiceLayer.MediatorServices.ProductServices.Queries;
+using UzMarket.ServiceLayer.MediatorServices.ProductServices.Commands;
 
 namespace UzMarket.WebApi.Controllers
 {
@@ -10,17 +13,17 @@ namespace UzMarket.WebApi.Controllers
     [Route("api/[controller]/[action]")]
     public class ProductController : ControllerBase
     {
-        private readonly IProductService _service;
-        public ProductController(IProductService service)
+        private readonly IMediator _mediator;
+        public ProductController(IMediator mediator)
         {
-            _service = service;
+            _mediator = mediator;
         }
 
         [AllowAnonymous]
         [HttpGet]
         public async Task<IActionResult> GetList([FromQuery] ProductFilterDto filter)
         {
-            var result = await _service.GetListAsync(filter);
+            var result = await _mediator.Send(new GetListQuery(filter));
 
             if (result is null)
                 return NotFound($"Product not found : {result}");
@@ -32,7 +35,7 @@ namespace UzMarket.WebApi.Controllers
         [HttpGet("{Id}")]
         public async Task<IActionResult> Get([FromRoute] long Id)
         {
-            var result = await _service.GetAsync(Id);
+            var result = await _mediator.Send(new GetByIdQuery(Id));
 
             if (result is null)
                 return NotFound($"Product not found : {Id}");
@@ -41,35 +44,23 @@ namespace UzMarket.WebApi.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] CreateProductDlDto dto, CancellationToken cancellationToken)
+        public async Task<IActionResult> Create([FromBody] CreateProductDlDto dto)
         {
-            var result = await _service.CreateAsync(dto, cancellationToken);
-
-            if (result is null)
-                return NotFound($"Failed to create the product.");
-
+            var result = await _mediator.Send(new CreateProductCommand(dto));
             return Ok(result);
         }
 
         [HttpPatch]
-        public async Task<IActionResult> Update([FromBody] UpdateProductDlDto dto, CancellationToken cancellationToken)
+        public async Task<IActionResult> Update([FromBody] UpdateProductDlDto dto)
         {
-            var result = await _service.UpdateAsync(dto, cancellationToken);
-
-            if (result is null)
-                return NotFound($"Product not found : {dto.Id}");
-
+            var result = await _mediator.Send(new UpdateProductCommand(dto));
             return Ok(result);
         }
 
         [HttpDelete("{Id}")]
-        public async Task<IActionResult> Delete([FromRoute] long Id, CancellationToken cancellationToken)
+        public async Task<IActionResult> Delete([FromRoute] long Id)
         {
-            var result = await _service.DeleteAsync(Id, cancellationToken);
-
-            if (result is null)
-                return NotFound($"Product not found : {Id}");
-
+            var result = await _mediator.Send(new DeleteProductCommand(Id));
             return Ok(result);
         }
     }

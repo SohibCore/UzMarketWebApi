@@ -1,4 +1,6 @@
-﻿namespace UzMarket.ServiceLayer.Services.OrderServices.QueryObjects
+﻿using UzMarket.ServiceLayer.MediatorServices.OrderServices.Dtos;
+
+namespace UzMarket.ServiceLayer.MediatorServices.OrderServices.Queries.QueryObjects
 {
     public static class OrderSortFilter
     {

@@ -3,7 +3,8 @@ using UzMarket.Core;
 using UzMarket.RepositoryLayer.DataBase;
 using UzMarket.RepositoryLayer.Dtos.OrderDtos;
 using UzMarket.RepositoryLayer.Entity;
-using UzMarket.ServiceLayer.Services.OrderServices.QueryObjects;
+using UzMarket.ServiceLayer.MediatorServices.OrderServices.Dtos;
+using UzMarket.ServiceLayer.MediatorServices.OrderServices.Queries.QueryObjects;
 using UzMarket.ServiceLayer.Services.ProductServices;
 
 namespace UzMarket.ServiceLayer.Services.OrderServices

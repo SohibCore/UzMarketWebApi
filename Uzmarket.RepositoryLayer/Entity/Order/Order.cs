@@ -1,6 +1,6 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using UzMarket.Core;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using UzMarket.Core;
 
 namespace UzMarket.RepositoryLayer.Entity
 {
@@ -56,6 +56,6 @@ namespace UzMarket.RepositoryLayer.Entity
         [ForeignKey(nameof(StatusId))]
         public StatusIdConst StatusConst { get; set; }
 
-        public ICollection<OrderItem> Tables { get; set; } = new List<OrderItem>();
+        public ICollection<OrderItem> Items { get; set; } = new List<OrderItem>();
     }
 }

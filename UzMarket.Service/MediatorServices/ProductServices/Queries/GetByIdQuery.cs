@@ -7,9 +7,9 @@ using UzMarket.ServiceLayer.MediatorServices.ProductServices.Dtos;
 
 namespace UzMarket.ServiceLayer.MediatorServices.ProductServices.Queries
 {
-    public record GetByIdQuery(long Id) : IRequest<ProductDto>;
+    public record GetByIdQuery(long Id) : IRequest<List<ProductDto>>;
 
-    public class GetByIdQueryHandler : IRequestHandler<GetByIdQuery, ProductDto>
+    public class GetByIdQueryHandler : IRequestHandler<GetByIdQuery, List<ProductDto>>
     {
         private readonly AppDbContext _context;
         private readonly IAccountService _service;
@@ -18,7 +18,7 @@ namespace UzMarket.ServiceLayer.MediatorServices.ProductServices.Queries
             _context = context;
             _service = service;
         }
-        public async Task<ProductDto> Handle(GetByIdQuery request, CancellationToken cancellationToken)
+        public async Task<List<ProductDto>> Handle(GetByIdQuery request, CancellationToken cancellationToken)
         {
             var product = await _context.Products
                 .AsNoTracking()
@@ -33,7 +33,11 @@ namespace UzMarket.ServiceLayer.MediatorServices.ProductServices.Queries
                     CategoryName = x.Category.Name,
                     StockQuantity = x.StockQuantity,
                     SupplierId = x.SupplierId,
-                }).FirstOrDefaultAsync(cancellationToken);
+                    Tables = product.Tables(x => new ProductImageDto
+                    {
+
+                    })
+                }).ToListAsync(cancellationToken);
 
             if (product == null)
                 throw new Exception($"Product not found : {request.Id}");

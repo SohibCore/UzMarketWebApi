@@ -1,4 +1,5 @@
 ﻿using UzMarket.RepositoryLayer.Dtos.OrderDtos;
+using UzMarket.ServiceLayer.MediatorServices.OrderServices.Dtos;
 
 namespace UzMarket.ServiceLayer.Services.OrderServices
 {
