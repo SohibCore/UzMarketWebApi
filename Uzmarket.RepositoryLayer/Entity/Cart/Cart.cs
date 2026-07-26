@@ -34,6 +34,6 @@ namespace UzMarket.RepositoryLayer.Entity
         [ForeignKey(nameof(UserId))]
         public User User { get; set; } = null!;
 
-        public ICollection<CartItem> Tables { get; set; } = new List<CartItem>();
+        public ICollection<CartItem> Items { get; set; } = new List<CartItem>();
     }
 }

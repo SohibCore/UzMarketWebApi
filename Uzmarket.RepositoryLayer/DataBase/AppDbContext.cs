@@ -1,6 +1,6 @@
-﻿using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using UzMarket.RepositoryLayer.Entity;
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 
 namespace UzMarket.RepositoryLayer.DataBase
 {

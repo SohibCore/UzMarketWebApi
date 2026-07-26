@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UzMarket.RepositoryLayer.Dtos.CartDtos;
+using UzMarket.ServiceLayer.MediatorServices.CartServices.Dtos;
 using UzMarket.ServiceLayer.Services.CartServices;
 
 namespace UzMarket.WebApi.Controllers

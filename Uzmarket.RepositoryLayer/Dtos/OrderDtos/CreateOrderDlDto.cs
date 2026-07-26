@@ -5,6 +5,6 @@
         public string OrderDate { get; set; } = null!;
         public int ShippingAddressId { get; set; }
 
-        public ICollection<CreateOrderItemDlDto> Tables { get; set; } = new List<CreateOrderItemDlDto>();
+        public ICollection<CreateOrderItemDlDto> Items { get; set; } = new List<CreateOrderItemDlDto>();
     }
 }

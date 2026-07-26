@@ -32,20 +32,20 @@ namespace UzMarket.RepositoryLayer.Entity
         public int StatusId { get; set; }
 
         [Column("CREATED_USER_ID")]
-        public int? CreateUserId { get; set; }
+        public long? CreateUserId { get; set; }
 
         [Column("CREATED_AT")]
         public DateTime? CreatedAt { get; set; }
 
         [Column("MODIFIED_USER_ID")]
-        public int? ModifiedUserId { get; set; }
+        public long? ModifiedUserId { get; set; }
 
         [Column("MODIFIED_AT")]
         public DateTime? ModifiedAt { get; set; }
 
         // Navigation properties
         [ForeignKey(nameof(OrderStatusId))]
-        public OrderStatus Status { get; set; }
+        public OrderStatus OrderStatus { get; set; }
 
         [ForeignKey(nameof(UserId))]
         public User User { get; set; } = null!;

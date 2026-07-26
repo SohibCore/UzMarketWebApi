@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using UzMarket.RepositoryLayer.Dtos.AuthDtos;
 using UzMarket.RepositoryLayer.Dtos.UserDtos;
-using UzMarket.ServiceLayer.Services.AuthServices;
+using UzMarket.ServiceLayer.Security.AuthServices;
 
 namespace UzMarket.WebApi.Controllers
 {

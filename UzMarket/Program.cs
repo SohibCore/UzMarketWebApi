@@ -6,12 +6,8 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using UzMarket.RepositoryLayer.DataBase;
 using UzMarket.ServiceLayer.MediatorServices.AddressServices.Commands;
-using UzMarket.ServiceLayer.Security;
-using UzMarket.ServiceLayer.Services.AuthServices;
-using UzMarket.ServiceLayer.Services.CartServices;
-using UzMarket.ServiceLayer.Services.OrderServices;
-using UzMarket.ServiceLayer.Services.ProductServices;
-using UzMarket.ServiceLayer.Services.UserServices;
+using UzMarket.ServiceLayer.Security.AccountServices;
+using UzMarket.ServiceLayer.Security.AuthServices;
 using UzMarket.Validators.User;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -61,11 +57,6 @@ builder.Services.AddDataProtection()
 builder.Services.AddHttpContextAccessor();
 
 //Services
-builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<IOrderService, OrderService>();
-builder.Services.AddScoped<ICartService, CartService>();
-builder.Services.AddScoped<IProductService, ProductService>();
-
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAccountService, AccountService>();
 
