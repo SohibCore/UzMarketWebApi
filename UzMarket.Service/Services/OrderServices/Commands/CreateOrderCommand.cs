@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using UzMarket.Core;
 using OpenQA.Selenium;
 using Microsoft.EntityFrameworkCore;
@@ -37,10 +37,10 @@ namespace UzMarket.ServiceLayer.MediatorServices.OrderServices.Commands
 
             foreach (var itemDto in request.dto.Items)
             {
-                var product = await _context.Products.FirstOrDefaultAsync(x => x.Id == itemDto.ProductId && x.SupplierId == _service.UserId && x.StatusId != (int)StatusIdConst.DELETED, cancellation);
+                var product = await _context.Products.FirstOrDefaultAsync(x => x.Id == itemDto.ProductId && x.StatusId != (int)StatusIdConst.DELETED, cancellation);
 
                 if (product == null)
-                    throw new NotFoundException("Product not found");
+                    throw new NotFoundException($"Product #{itemDto.ProductId} not found");
 
                 var unitPrice = product.Price;
                 var itemTotal = unitPrice * itemDto.Quantity;

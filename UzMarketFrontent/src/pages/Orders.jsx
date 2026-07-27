@@ -70,7 +70,7 @@ export default function Orders({
         isDefault: addressForm.isDefault
       });
 
-      const tables = cartItems.map(item => {
+      const items = cartItems.map(item => {
         const prod = products.find(p => p.id === item.productId);
         return {
           productId: item.productId,
@@ -83,7 +83,7 @@ export default function Orders({
       const orderDto = {
         orderDate: today,
         shippingAddressId: Number(createdAddressId),
-        tables
+        items
       };
 
       await api.orders.create(orderDto);
@@ -336,17 +336,18 @@ export default function Orders({
               </div>
 
               {/* Order Items list inside order */}
-              {ord.tables && ord.tables.length > 0 ? (
+              {((ord.items && ord.items.length > 0) || (ord.tables && ord.tables.length > 0)) ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {ord.tables.map((item, idx) => {
+                  {(ord.items || ord.tables).map((item, idx) => {
                     const prod = products.find(p => p.id === item.productId);
+                    const itemPrice = item.price || (prod ? prod.price : 0);
                     return (
                       <div key={item.id || idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.88rem' }}>
                         <span style={{ color: 'var(--text-muted)' }}>
                           {prod ? prod.name : `Mahsulot #${item.productId}`} <strong style={{ color: 'var(--text-main)' }}>x{item.quantity}</strong>
                         </span>
                         <span style={{ fontWeight: 600 }}>
-                          {(item.price || (prod ? prod.price : 0) * item.quantity).toLocaleString('uz-UZ')} UZS
+                          {(itemPrice * item.quantity).toLocaleString('uz-UZ')} UZS
                         </span>
                       </div>
                     );

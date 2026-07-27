@@ -96,13 +96,14 @@ export default function App() {
         const fullCart = await api.cart.get(userCartList[0].id);
         setActiveCart({
           id: fullCart.id,
-          tables: fullCart.tables || []
+          items: fullCart.items || fullCart.tables || []
         });
       } else {
-        const newCart = await api.cart.create({ userId, tables: [] });
+        const createRes = await api.cart.create({ userId, items: [] });
+        const cartId = typeof createRes === 'object' ? (createRes.id || createRes) : Number(createRes);
         setActiveCart({
-          id: newCart.id,
-          tables: []
+          id: cartId,
+          items: []
         });
       }
     } catch (err) {
@@ -111,10 +112,11 @@ export default function App() {
       }
 
       try {
-        const newCart = await api.cart.create({ userId, tables: [] });
+        const createRes = await api.cart.create({ userId, items: [] });
+        const cartId = typeof createRes === 'object' ? (createRes.id || createRes) : Number(createRes);
         setActiveCart({
-          id: newCart.id,
-          tables: []
+          id: cartId,
+          items: []
         });
       } catch (createErr) {
         console.error("Error creating user cart:", createErr);
@@ -161,37 +163,42 @@ export default function App() {
       return;
     }
 
-    const updatedTables = [...activeCart.tables];
-    const existingIndex = updatedTables.findIndex(item => item.productId === product.id);
+    const currentItems = activeCart.items || activeCart.tables || [];
+    const updatedItems = [...currentItems];
+    const existingIndex = updatedItems.findIndex(item => item.productId === product.id);
 
     if (existingIndex > -1) {
       // Increment quantity
-      const newQty = (updatedTables[existingIndex].quantity || 1) + qty;
+      const newQty = (updatedItems[existingIndex].quantity || 1) + qty;
       if (newQty > product.stockQuantity) {
         alert(`Kechirasiz, omborda bor-yo'g'i ${product.stockQuantity} ta mahsulot mavjud.`);
         return;
       }
-      updatedTables[existingIndex].quantity = newQty;
+      updatedItems[existingIndex] = {
+        ...updatedItems[existingIndex],
+        quantity: newQty
+      };
     } else {
       // Add new item
-      updatedTables.push({
+      updatedItems.push({
         productId: product.id,
         quantity: qty
       });
     }
 
     try {
-      const response = await api.cart.update({
+      await api.cart.update({
         id: activeCart.id,
-        tables: updatedTables.map(t => ({
-          cartId: activeCart.id,
+        tables: updatedItems.map(t => ({
+          id: t.id || null,
           productId: t.productId,
           quantity: t.quantity
         }))
       });
+
       setActiveCart({
-        id: response.id,
-        tables: response.tables || []
+        id: activeCart.id,
+        items: updatedItems
       });
       setCartDrawerOpen(true); // Open drawer to show success
     } catch (err) {
@@ -208,7 +215,8 @@ export default function App() {
       return;
     }
 
-    const updatedTables = activeCart.tables.map(item => {
+    const currentItems = activeCart.items || activeCart.tables || [];
+    const updatedItems = currentItems.map(item => {
       if (item.productId === cartItem.productId) {
         return { ...item, quantity: newQty };
       }
@@ -216,17 +224,18 @@ export default function App() {
     });
 
     try {
-      const response = await api.cart.update({
+      await api.cart.update({
         id: activeCart.id,
-        tables: updatedTables.map(t => ({
-          cartId: activeCart.id,
+        tables: updatedItems.map(t => ({
+          id: t.id || null,
           productId: t.productId,
           quantity: t.quantity
         }))
       });
+
       setActiveCart({
-        id: response.id,
-        tables: response.tables || []
+        id: activeCart.id,
+        items: updatedItems
       });
     } catch (err) {
       alert("Savatni yangilashda xatolik: " + err.message);
@@ -237,20 +246,22 @@ export default function App() {
   const handleRemoveItem = async (cartItem) => {
     if (!activeCart) return;
 
-    const updatedTables = activeCart.tables.filter(item => item.productId !== cartItem.productId);
+    const currentItems = activeCart.items || activeCart.tables || [];
+    const updatedItems = currentItems.filter(item => item.productId !== cartItem.productId);
 
     try {
-      const response = await api.cart.update({
+      await api.cart.update({
         id: activeCart.id,
-        tables: updatedTables.map(t => ({
-          cartId: activeCart.id,
+        tables: updatedItems.map(t => ({
+          id: t.id || null,
           productId: t.productId,
           quantity: t.quantity
         }))
       });
+
       setActiveCart({
-        id: response.id,
-        tables: response.tables || []
+        id: activeCart.id,
+        items: updatedItems
       });
     } catch (err) {
       alert("Savatdan o'chirishda xatolik: " + err.message);
@@ -262,13 +273,14 @@ export default function App() {
     if (!activeCart) return;
 
     try {
-      const response = await api.cart.update({
+      await api.cart.update({
         id: activeCart.id,
         tables: []
       });
+
       setActiveCart({
-        id: response.id,
-        tables: []
+        id: activeCart.id,
+        items: []
       });
     } catch (err) {
       alert("Savatni tozalashda xatolik: " + err.message);
@@ -331,7 +343,7 @@ export default function App() {
           <Orders 
             viewType="history"
             products={products}
-            cartItems={activeCart ? activeCart.tables : []}
+            cartItems={activeCart ? (activeCart.items || activeCart.tables || []) : []}
             onNavigate={setActivePage}
           />
         );
@@ -340,7 +352,7 @@ export default function App() {
           <Orders 
             viewType="checkout"
             products={products}
-            cartItems={activeCart ? activeCart.tables : []}
+            cartItems={activeCart ? (activeCart.items || activeCart.tables || []) : []}
             onOrderPlaced={handleOrderPlaced}
             onNavigate={setActivePage}
           />
@@ -350,9 +362,8 @@ export default function App() {
     }
   };
 
-  const cartItemsCount = activeCart 
-    ? activeCart.tables.reduce((sum, item) => sum + (item.quantity || 0), 0) 
-    : 0;
+  const cartItemsList = activeCart ? (activeCart.items || activeCart.tables || []) : [];
+  const cartItemsCount = cartItemsList.reduce((sum, item) => sum + (item.quantity || 0), 0);
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -393,7 +404,7 @@ export default function App() {
       <CartDrawer 
         isOpen={cartDrawerOpen}
         onClose={() => setCartDrawerOpen(false)}
-        cartItems={activeCart ? activeCart.tables : []}
+        cartItems={cartItemsList}
         products={products}
         onUpdateQty={handleUpdateQty}
         onRemoveItem={handleRemoveItem}

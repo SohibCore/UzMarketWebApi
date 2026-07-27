@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 using UzMarket.Core;
 using UzMarket.RepositoryLayer.DataBase;
@@ -28,16 +28,18 @@ namespace UzMarket.ServiceLayer.MediatorServices.OrderServices.Queries
                 .Select(x => new OrderListDto
                 {
                     Id = x.Id,
+                    UserId = x.UserId,
                     OrderDate = x.OrderDate,
-                    OrderStatusId = x.StatusId,
+                    OrderStatusId = x.OrderStatusId,
+                    ShippingAddressId = x.ShippingAddressId,
                     TotalAmount = x.TotalAmount,
-                    Items = x.Items.Select(x => new OrderItemDto
+                    Items = x.Items.Select(item => new OrderItemDto
                     {
-                        Id = x.Id,
-                        OrderId = x.OrderId,
-                        Price = x.Price,
-                        ProductId = x.ProductId,
-                        Quantity = x.Quantity,
+                        Id = item.Id,
+                        OrderId = item.OrderId,
+                        Price = item.Price,
+                        ProductId = item.ProductId,
+                        Quantity = item.Quantity,
                     }).ToList()
                 }).SortFilter(request.filter)
                 .ToListAsync(cancellation);

@@ -17,9 +17,10 @@ export default function ProductDetails({ productId, onAddToCart, onBack }) {
         setProduct(data);
         
         // Set active image
-        if (data.tables && data.tables.length > 0) {
-          const mainPicObj = data.tables.find(t => t.mainPic) || data.tables[0];
-          setActiveImage(mainPicObj.imageUrl);
+        const prodTables = data.tables || data.images || [];
+        if (prodTables.length > 0) {
+          const mainPicObj = prodTables.find(t => t.mainPic) || prodTables[0];
+          setActiveImage(mainPicObj.imageUrl || mainPicObj.url || mainPicObj);
         } else {
           setActiveImage('https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&auto=format&fit=crop&q=60');
         }
@@ -124,38 +125,41 @@ export default function ProductDetails({ productId, onAddToCart, onBack }) {
           </div>
 
           {/* Thumbnails list */}
-          {product.tables && product.tables.length > 1 && (
+          {(product.tables || product.images) && (product.tables || product.images).length > 1 && (
             <div style={{
               display: 'flex',
               gap: '12px',
               overflowX: 'auto',
               paddingBottom: '8px'
             }}>
-              {product.tables.map((img, idx) => (
-                <div 
-                  key={img.id || idx}
-                  onClick={() => setActiveImage(img.imageUrl)}
-                  style={{
-                    width: '70px',
-                    height: '70px',
-                    borderRadius: '8px',
-                    overflow: 'hidden',
-                    cursor: 'pointer',
-                    border: activeImage === img.imageUrl 
-                      ? '2px solid var(--accent-indigo)' 
-                      : '1px solid var(--border-color)',
-                    opacity: activeImage === img.imageUrl ? 1 : 0.7,
-                    transition: 'var(--transition-fast)',
-                    backgroundColor: 'rgba(255,255,255,0.02)'
-                  }}
-                >
-                  <img 
-                    src={img.imageUrl} 
-                    alt={`thumbnail-${idx}`}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  />
-                </div>
-              ))}
+              {(product.tables || product.images).map((img, idx) => {
+                const imgUrl = img.imageUrl || img.url || img;
+                return (
+                  <div 
+                    key={img.id || idx}
+                    onClick={() => setActiveImage(imgUrl)}
+                    style={{
+                      width: '70px',
+                      height: '70px',
+                      borderRadius: '8px',
+                      overflow: 'hidden',
+                      cursor: 'pointer',
+                      border: activeImage === imgUrl 
+                        ? '2px solid var(--accent-indigo)' 
+                        : '1px solid var(--border-color)',
+                      opacity: activeImage === imgUrl ? 1 : 0.7,
+                      transition: 'var(--transition-fast)',
+                      backgroundColor: 'rgba(255,255,255,0.02)'
+                    }}
+                  >
+                    <img 
+                      src={imgUrl} 
+                      alt={`thumbnail-${idx}`}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

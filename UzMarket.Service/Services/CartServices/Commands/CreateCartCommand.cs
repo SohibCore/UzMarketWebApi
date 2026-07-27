@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using UzMarket.Core;
 using OpenQA.Selenium;
 using Microsoft.EntityFrameworkCore;
@@ -22,39 +22,44 @@ namespace UzMarket.ServiceLayer.MediatorServices.CartServices.Commands
         }
         public async Task<long> Handle(CreateCartCommand request, CancellationToken cancellation)
         {
-            var productId = request.dto.Items
-                .Select(x => x.ProductId)
-                .Distinct();
-
-            var products = await _context.Products
-                .Where(x => productId.Contains(x.Id) && x.StatusId != (int)StatusIdConst.DELETED)
-                .ToListAsync(cancellation);
-
-            if (products.Count != productId.Count())
-                throw new NotFoundException("One or more products not found.");
-
-            var item = products.FirstOrDefault();
-            var itemProductId = request.dto.Items.First().ProductId;
-            var product = await _context.Products.FindAsync(itemProductId);
-
-            if (product == null)
-                throw new NotFoundException($"Product {itemProductId} does not exist");
-
-            if (product.StockQuantity < item.StockQuantity)
-                throw new Exception("Insufficient stock.");
-
             var cart = new Cart
             {
                 UserId = _service.UserId,
                 StatusId = (int)StatusIdConst.CREATED,
                 CreatedAt = DateTime.UtcNow,
                 CreateUserId = _service.UserId,
-                Items = request.dto.Items.Select(x => new CartItem
-                {
-                    ProductId = x.ProductId,
-                    Quantity = x.Quantity,
-                }).ToList()
+                Items = new List<CartItem>()
             };
+
+            if (request.dto?.Items != null && request.dto.Items.Any())
+            {
+                var productIds = request.dto.Items
+                    .Select(x => x.ProductId)
+                    .Distinct()
+                    .ToList();
+
+                var products = await _context.Products
+                    .Where(x => productIds.Contains(x.Id) && x.StatusId != (int)StatusIdConst.DELETED)
+                    .ToDictionaryAsync(x => x.Id, cancellation);
+
+                if (products.Count != productIds.Count)
+                    throw new NotFoundException("One or more products not found.");
+
+                foreach (var itemDto in request.dto.Items)
+                {
+                    if (products.TryGetValue(itemDto.ProductId, out var prod))
+                    {
+                        if (prod.StockQuantity < itemDto.Quantity)
+                            throw new Exception($"Insufficient stock for product {prod.Name}.");
+
+                        cart.Items.Add(new CartItem
+                        {
+                            ProductId = itemDto.ProductId,
+                            Quantity = itemDto.Quantity,
+                        });
+                    }
+                }
+            }
 
             await _context.Carts.AddAsync(cart, cancellation);
             await _context.SaveChangesAsync(cancellation);

@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using UzMarket.Core;
 using OpenQA.Selenium;
 using Microsoft.EntityFrameworkCore;
@@ -28,6 +28,7 @@ namespace UzMarket.ServiceLayer.MediatorServices.CartServices.Queries
                 .Select(x => new CartDto
                 {
                     Id = x.Id,
+                    UserId = x.UserId,
                     StatusId = x.StatusId,
                     Items = x.Items.Select(item => new CartItemDto
                     {

@@ -1,9 +1,11 @@
+using MediatR;
 using FluentValidation;
 using FluentValidation.AspNetCore;
-using MediatR;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using UzMarket.RepositoryLayer.DataBase;
 using UzMarket.ServiceLayer.MediatorServices.AddressServices.Commands;
 using UzMarket.ServiceLayer.Security.AccountServices;
@@ -29,21 +31,39 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     options.LoginPath = "/api/Auth/Login";
     options.LogoutPath = "/api/Auth/Logout";
     options.ExpireTimeSpan = TimeSpan.FromHours(7);
-    options.SlidingExpiration = true; // har so'rovda muddat 7 soatga uzayadi
-    options.Cookie.HttpOnly = true; // JS orqali o'qib bo'lmaydi (XSS himoyasi)
-    options.Cookie.SameSite = SameSiteMode.Lax; // Frontend boshqa domenda bo'lsa: None + Secure
-    options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // faqat HTTPS orqali yuboriladi
-                                                             // API/SPA uchun: login sahifasiga redirect o'rniga to'g'ri HTTP status qaytarsin
+    options.SlidingExpiration = true;
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+
     options.Events = new CookieAuthenticationEvents
     {
+        OnValidatePrincipal = async ctx =>
+        {
+            var userIdClaim = ctx.Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userIdClaim == null || !long.TryParse(userIdClaim, out var userId))
+            {
+                ctx.RejectPrincipal();
+                return;
+            }
+
+            var dbContext = ctx.HttpContext.RequestServices.GetRequiredService<AppDbContext>();
+            var exists = await dbContext.Users.AnyAsync(u => u.Id == userId);
+
+            if (!exists)
+            {
+                ctx.RejectPrincipal();
+                await ctx.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            }
+        },
         OnRedirectToLogin = ctx =>
         {
-            ctx.Response.StatusCode = 401; // Unauthorized
+            ctx.Response.StatusCode = 401;
             return Task.CompletedTask;
         },
         OnRedirectToAccessDenied = ctx =>
         {
-            ctx.Response.StatusCode = 403; // Forbidden
+            ctx.Response.StatusCode = 403;
             return Task.CompletedTask;
         }
     };

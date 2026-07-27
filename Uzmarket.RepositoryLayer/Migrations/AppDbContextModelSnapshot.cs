@@ -117,8 +117,8 @@ namespace UzMarket.RepositoryLayer.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
-                    b.Property<int?>("CreateUserId")
-                        .HasColumnType("integer")
+                    b.Property<long?>("CreateUserId")
+                        .HasColumnType("bigint")
                         .HasColumnName("CREATED_USER_ID");
 
                     b.Property<DateTime?>("CreatedAt")
@@ -129,8 +129,8 @@ namespace UzMarket.RepositoryLayer.Migrations
                         .HasColumnType("timestamp without time zone")
                         .HasColumnName("MODIFIED_AT");
 
-                    b.Property<int?>("ModifiedUserId")
-                        .HasColumnType("integer")
+                    b.Property<long?>("ModifiedUserId")
+                        .HasColumnType("bigint")
                         .HasColumnName("MODIFIED_USER_ID");
 
                     b.Property<int>("StatusId")
@@ -196,7 +196,6 @@ namespace UzMarket.RepositoryLayer.Migrations
                         .HasColumnName("CREATED_AT");
 
                     b.Property<string>("Description")
-                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("DESCRIPTION");
 
@@ -266,8 +265,8 @@ namespace UzMarket.RepositoryLayer.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
-                    b.Property<int?>("CreateUserId")
-                        .HasColumnType("integer")
+                    b.Property<long?>("CreateUserId")
+                        .HasColumnType("bigint")
                         .HasColumnName("CREATED_USER_ID");
 
                     b.Property<DateTime?>("CreatedAt")
@@ -278,14 +277,17 @@ namespace UzMarket.RepositoryLayer.Migrations
                         .HasColumnType("timestamp without time zone")
                         .HasColumnName("MODIFIED_AT");
 
-                    b.Property<int?>("ModifiedUserId")
-                        .HasColumnType("integer")
+                    b.Property<long?>("ModifiedUserId")
+                        .HasColumnType("bigint")
                         .HasColumnName("MODIFIED_USER_ID");
 
                     b.Property<string>("OrderDate")
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("ORDER_DATE");
+
+                    b.Property<int>("OrderStatus")
+                        .HasColumnType("integer");
 
                     b.Property<int>("OrderStatusId")
                         .HasColumnType("integer")
@@ -294,9 +296,6 @@ namespace UzMarket.RepositoryLayer.Migrations
                     b.Property<int>("ShippingAddressId")
                         .HasColumnType("integer")
                         .HasColumnName("SHIPPING_ADDRESS_ID");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
 
                     b.Property<int>("StatusConst")
                         .HasColumnType("integer");
@@ -441,8 +440,8 @@ namespace UzMarket.RepositoryLayer.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("CATEGORY_ID");
 
-                    b.Property<int?>("CreateUserId")
-                        .HasColumnType("integer")
+                    b.Property<long?>("CreateUserId")
+                        .HasColumnType("bigint")
                         .HasColumnName("CREATED_USER_ID");
 
                     b.Property<DateTime?>("CreatedAt")
@@ -450,7 +449,6 @@ namespace UzMarket.RepositoryLayer.Migrations
                         .HasColumnName("CREATED_AT");
 
                     b.Property<string>("Description")
-                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("DESCRIPTION");
 
@@ -458,8 +456,8 @@ namespace UzMarket.RepositoryLayer.Migrations
                         .HasColumnType("timestamp without time zone")
                         .HasColumnName("MODIFIED_AT");
 
-                    b.Property<int?>("ModifiedUserId")
-                        .HasColumnType("integer")
+                    b.Property<long?>("ModifiedUserId")
+                        .HasColumnType("bigint")
                         .HasColumnName("MODIFIED_USER_ID");
 
                     b.Property<string>("Name")
@@ -513,9 +511,8 @@ namespace UzMarket.RepositoryLayer.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("MAIN_PIC");
 
-                    b.Property<long>("ProductId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("PRODUCT_ID");
+                    b.Property<long?>("ProductId")
+                        .HasColumnType("bigint");
 
                     b.Property<int>("SortOrder")
                         .HasColumnType("integer")
@@ -698,7 +695,7 @@ namespace UzMarket.RepositoryLayer.Migrations
             modelBuilder.Entity("UzMarket.RepositoryLayer.Entity.CartItem", b =>
                 {
                     b.HasOne("UzMarket.RepositoryLayer.Entity.Cart", "Cart")
-                        .WithMany("Tables")
+                        .WithMany("Items")
                         .HasForeignKey("CartId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -764,7 +761,7 @@ namespace UzMarket.RepositoryLayer.Migrations
             modelBuilder.Entity("UzMarket.RepositoryLayer.Entity.OrderItem", b =>
                 {
                     b.HasOne("UzMarket.RepositoryLayer.Entity.Order", "Order")
-                        .WithMany("Tables")
+                        .WithMany("Items")
                         .HasForeignKey("OrderId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -801,18 +798,14 @@ namespace UzMarket.RepositoryLayer.Migrations
 
             modelBuilder.Entity("UzMarket.RepositoryLayer.Entity.ProductImage", b =>
                 {
-                    b.HasOne("UzMarket.RepositoryLayer.Entity.Product", "Product")
+                    b.HasOne("UzMarket.RepositoryLayer.Entity.Product", null)
                         .WithMany("Tables")
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Product");
+                        .HasForeignKey("ProductId");
                 });
 
             modelBuilder.Entity("UzMarket.RepositoryLayer.Entity.Cart", b =>
                 {
-                    b.Navigation("Tables");
+                    b.Navigation("Items");
                 });
 
             modelBuilder.Entity("UzMarket.RepositoryLayer.Entity.Category", b =>
@@ -822,7 +815,7 @@ namespace UzMarket.RepositoryLayer.Migrations
 
             modelBuilder.Entity("UzMarket.RepositoryLayer.Entity.Order", b =>
                 {
-                    b.Navigation("Tables");
+                    b.Navigation("Items");
                 });
 
             modelBuilder.Entity("UzMarket.RepositoryLayer.Entity.Product", b =>

@@ -47,13 +47,17 @@ async function request(endpoint, options = {}) {
       throw err;
     }
 
-    // Some endpoints return empty body on Success (e.g. Logout, Delete)
+    // Some endpoints return empty body or plain text/number on Success (e.g. Logout, Delete, Create returning ID)
     const contentType = response.headers.get('content-type');
     if (contentType && contentType.includes('application/json')) {
       return await response.json();
     }
     
-    return await response.text();
+    const text = await response.text();
+    if (text === 'true') return true;
+    if (text === 'false') return false;
+    if (text && !isNaN(Number(text))) return Number(text);
+    return text;
   } catch (error) {
     if (error.name === 'AbortError') {
       const timeoutError = new Error('Request timed out');
@@ -109,13 +113,28 @@ export const api = {
     create: async (productData) => {
       return request('/Product/Create', {
         method: 'POST',
-        body: productData,
+        body: {
+          name: productData.name,
+          description: productData.description || '',
+          price: productData.price,
+          stockQuantity: productData.stockQuantity,
+          categoryId: productData.categoryId,
+          tables: productData.tables || productData.images || []
+        },
       });
     },
     update: async (productData) => {
       return request('/Product/Update', {
         method: 'PATCH',
-        body: productData,
+        body: {
+          id: productData.id,
+          name: productData.name,
+          description: productData.description || '',
+          price: productData.price,
+          stockQuantity: productData.stockQuantity,
+          categoryId: productData.categoryId,
+          tables: productData.tables || productData.images || []
+        },
       });
     },
     delete: async (id) => {
@@ -137,17 +156,33 @@ export const api = {
       return request(`/Cart/Get/${id}`, { method: 'GET' });
     },
     create: async (cartData) => {
-      // cartData format: { tables: [ { productId, quantity } ] }
+      // CreateCartDlDto format: { userId, items: [ { productId, quantity } ] }
+      const itemsList = cartData.items || cartData.tables || [];
       return request('/Cart/Create', {
         method: 'POST',
-        body: cartData,
+        body: {
+          userId: cartData.userId,
+          items: itemsList.map(item => ({
+            productId: item.productId,
+            quantity: item.quantity
+          }))
+        },
       });
     },
     update: async (cartData) => {
-      // cartData format: { id, tables: [ { cartId, productId, quantity } ] }
+      // UpdateCartDlDto format: { id, statusId, tables: [ { id, productId, quantity } ] }
+      const itemsList = cartData.tables || cartData.items || [];
       return request('/Cart/Update', {
         method: 'PATCH',
-        body: cartData,
+        body: {
+          id: cartData.id,
+          statusId: cartData.statusId || 2, // 2 = MODIFIED
+          tables: itemsList.map(item => ({
+            id: item.id || null,
+            productId: item.productId,
+            quantity: item.quantity
+          }))
+        },
       });
     },
     delete: async (id) => {
@@ -159,7 +194,6 @@ export const api = {
   orders: {
     getList: async (filters = {}) => {
       const queryParams = new URLSearchParams();
-      // filters: can pass any parameters supported by backend
       const queryString = queryParams.toString();
       const endpoint = `/Order/GetList${queryString ? `?${queryString}` : ''}`;
       return request(endpoint, { method: 'GET' });
@@ -168,10 +202,19 @@ export const api = {
       return request(`/Order/Get/${id}`, { method: 'GET' });
     },
     create: async (orderData) => {
-      // orderData format: { orderDate: "YYYY-MM-DD", shippingAddressId, tables: [ { productId, quantity, price } ] }
+      // CreateOrderDlDto format: { orderDate: "YYYY-MM-DD", shippingAddressId, items: [ { productId, quantity, price } ] }
+      const itemsList = orderData.items || orderData.tables || [];
       return request('/Order/Create', {
         method: 'POST',
-        body: orderData,
+        body: {
+          orderDate: orderData.orderDate,
+          shippingAddressId: orderData.shippingAddressId,
+          items: itemsList.map(item => ({
+            productId: item.productId,
+            quantity: item.quantity,
+            price: item.price
+          }))
+        },
       });
     },
     update: async (orderData) => {

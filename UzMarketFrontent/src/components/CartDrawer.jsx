@@ -15,13 +15,14 @@ export default function CartDrawer({
   // Map cart item ProductId to rich product data
   const richItems = cartItems.map(item => {
     const prod = products.find(p => p.id === item.productId);
+    const prodTables = prod?.tables || prod?.images || [];
     return {
       ...item,
       name: prod ? prod.name : `Mahsulot #${item.productId}`,
       price: prod ? prod.price : 0,
       stock: prod ? prod.stockQuantity : 0,
-      image: prod && prod.tables && prod.tables.length > 0 
-        ? prod.tables.find(t => t.mainPic)?.imageUrl || prod.tables[0].imageUrl
+      image: prod && prodTables.length > 0 
+        ? prodTables.find(t => t.mainPic)?.imageUrl || prodTables[0].imageUrl
         : 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=200&auto=format&fit=crop&q=60'
     };
   });
