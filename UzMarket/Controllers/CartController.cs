@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using UzMarket.RepositoryLayer.Dtos.CartDtos;
 using UzMarket.ServiceLayer.MediatorServices.CartServices.Dtos;
-using UzMarket.ServiceLayer.Services.CartServices;
+using UzMarket.ServiceLayer.MediatorServices.CartServices.Queries;
+using UzMarket.ServiceLayer.MediatorServices.CartServices.Commands;
 
 namespace UzMarket.WebApi.Controllers
 {
@@ -11,16 +13,16 @@ namespace UzMarket.WebApi.Controllers
     [Route("api/[controller]/[action]")]
     public class CartController : ControllerBase
     {
-        private readonly ICartService _service;
-        public CartController(ICartService service)
+        private readonly IMediator _mediator;
+        public CartController(IMediator mediator)
         {
-            _service = service;
+            _mediator = mediator;
         }
 
         [HttpGet]
         public async Task<IActionResult> GetList([FromQuery] CartFilterDto filter)
         {
-            var result = await _service.GetListAsync(filter);
+            var result = await _mediator.Send(new GetListQuery(filter));
 
             return Ok(result);
         }
@@ -28,7 +30,7 @@ namespace UzMarket.WebApi.Controllers
         [HttpGet("{Id}")]
         public async Task<IActionResult> Get([FromRoute] long Id)
         {
-            var result = await _service.GetAsync(Id);
+            var result = await _mediator.Send(new GetByIdQuery(Id));
 
             if (result is null)
                 return NotFound($"Cart not found : {Id}");
@@ -37,20 +39,17 @@ namespace UzMarket.WebApi.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] CreateCartDlDto dto, CancellationToken cancellationToken)
+        public async Task<IActionResult> Create([FromBody] CreateCartDlDto dto)
         {
-            var result = await _service.CreateAsync(dto, cancellationToken);
+            var result = await _mediator.Send(new CreateCartCommand(dto));
 
             return Ok(result);
         }
 
         [HttpPatch]
-        public async Task<IActionResult> Update([FromBody] UpdateCartDlDto dto, CancellationToken cancellationToken)
+        public async Task<IActionResult> Update([FromBody] UpdateCartDlDto dto)
         {
-            var result = await _service.UpdateAsync(dto, cancellationToken);
-
-            if (result is null)
-                return NotFound($"Cart not found : {dto.Id}");
+            var result = await _mediator.Send(new UpdateCartCommand(dto));
 
             return Ok(result);
         }
@@ -58,10 +57,7 @@ namespace UzMarket.WebApi.Controllers
         [HttpDelete("{Id}")]
         public async Task<IActionResult> Delete([FromRoute] long Id, CancellationToken cancellationToken)
         {
-            var result = await _service.DeleteAsync(Id, cancellationToken);
-
-            if (result is null)
-                return NotFound($"Cart not found : {Id}");
+            var result = await _mediator.Send(new DeleteCartCommand(Id));
 
             return Ok(result);
         }

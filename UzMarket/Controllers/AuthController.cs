@@ -1,10 +1,10 @@
-﻿using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authorization;
+﻿using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
-using UzMarket.RepositoryLayer.Dtos.AuthDtos;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authentication;
 using UzMarket.RepositoryLayer.Dtos.UserDtos;
+using UzMarket.RepositoryLayer.Dtos.AuthDtos;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using UzMarket.ServiceLayer.Security.AuthServices;
 
 namespace UzMarket.WebApi.Controllers

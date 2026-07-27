@@ -8,10 +8,10 @@ namespace UzMarket.Validators
     {
         public CreateCartValidator(IValidator<CreateCartItemDlDto> validator)
         {
-            RuleFor(x => x.Tables)
+            RuleFor(x => x.Items)
                 .NotNull().WithMessage("The Cart items collection must be provided.");
 
-            RuleForEach(x => x.Tables).SetValidator(validator);
+            RuleForEach(x => x.Items).SetValidator(validator);
         }
     }
 }

@@ -1,10 +1,10 @@
 ﻿using MediatR;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using UzMarket.RepositoryLayer.Dtos.CategoryDtos;
-using UzMarket.ServiceLayer.MediatorServices.CategoryServices.Commands;
 using UzMarket.ServiceLayer.MediatorServices.CategoryServices.Dtos;
 using UzMarket.ServiceLayer.MediatorServices.CategoryServices.Queries;
+using UzMarket.ServiceLayer.MediatorServices.CategoryServices.Commands;
 
 namespace UzMarket.WebApi.Controllers
 {

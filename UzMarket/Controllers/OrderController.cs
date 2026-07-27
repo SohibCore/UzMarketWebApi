@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using MediatR;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using UzMarket.RepositoryLayer.Dtos.OrderDtos;
-using UzMarket.ServiceLayer.Services.OrderServices;
 using UzMarket.ServiceLayer.MediatorServices.OrderServices.Dtos;
+using UzMarket.ServiceLayer.MediatorServices.OrderServices.Queries;
+using UzMarket.ServiceLayer.MediatorServices.OrderServices.Commands;
 
 namespace UzMarket.WebApi.Controllers
 {
@@ -11,16 +13,16 @@ namespace UzMarket.WebApi.Controllers
     [Route("api/[controller]/[action]")]
     public class OrderController : ControllerBase
     {
-        private readonly IOrderService _orderService;
-        public OrderController(IOrderService orderService)
+        private readonly IMediator _mediator;
+        public OrderController(IMediator mediator)
         {
-            _orderService = orderService;
+            _mediator = mediator;
         }
 
         [HttpGet]
         public async Task<IActionResult> GetList([FromQuery] OrderFilterDto filter)
         {
-            var result = await _orderService.GetListAsync(filter);
+            var result = await _mediator.Send(new GetListQuery(filter));
 
             if (result is null || result.Count == 0)
                 return NotFound($"Order was not found.");
@@ -31,7 +33,7 @@ namespace UzMarket.WebApi.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> Get([FromRoute] long Id)
         {
-            var result = await _orderService.GetAsync(Id);
+            var result = await _mediator.Send(new GetByIdQuery(Id));
 
             if (result is null)
                 return NotFound($"Order not found: {Id}");
@@ -40,20 +42,17 @@ namespace UzMarket.WebApi.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] CreateOrderDlDto dto, CancellationToken cancellation)
+        public async Task<IActionResult> Create([FromBody] CreateOrderDlDto dto)
         {
-            var result = await _orderService.CreateAsync(dto, cancellation);
+            var result = await _mediator.Send(new CreateOrderCommand(dto));
 
             return Ok(result);
         }
 
         [HttpPatch]
-        public async Task<IActionResult> Update([FromBody] UpdateOrderDlDto dto, CancellationToken cancellation)
+        public async Task<IActionResult> Update([FromBody] UpdateOrderDlDto dto)
         {
-            var result = await _orderService.UpdateAsync(dto, cancellation);
-
-            if (result is null)
-                return NotFound($"Order not found : {dto.Id}");
+            var result = await _mediator.Send(new UpdateOrderCommand(dto));
 
             return Ok(result);
         }
@@ -61,10 +60,7 @@ namespace UzMarket.WebApi.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete([FromRoute] long Id, CancellationToken cancellation)
         {
-            var result = await _orderService.DeleteAsync(Id, cancellation);
-
-            if (result is null)
-                return NotFound($"Order not found: {Id}");
+            var result = await _mediator.Send(new DeleteOrderCommand(Id));
 
             return Ok(result);
         }

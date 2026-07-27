@@ -1,12 +1,12 @@
 ﻿using MediatR;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using UzMarket.RepositoryLayer.DataBase;
+using Microsoft.AspNetCore.Authorization;
 using UzMarket.RepositoryLayer.Dtos.AddressDtos;
-using UzMarket.ServiceLayer.MediatorServices.AddressServices.Commands;
 using UzMarket.ServiceLayer.MediatorServices.AddressServices.Dtos;
 using UzMarket.ServiceLayer.MediatorServices.AddressServices.Queries;
+using UzMarket.ServiceLayer.MediatorServices.AddressServices.Commands;
 
 namespace UzMarket.WebApi.Controllers
 {
