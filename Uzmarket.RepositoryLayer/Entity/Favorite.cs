@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
+using UzMarket.Core;
 
 namespace UzMarket.RepositoryLayer.Entity
 {
@@ -6,13 +7,16 @@ namespace UzMarket.RepositoryLayer.Entity
     public class Favorite
     {
         [Column("ID")]
-        public long Id { get; set; }
+        public int Id { get; set; }
 
         [Column("USER_ID")]
         public long UserId { get; set; }
 
         [Column("PRODUCT_ID")]
         public long ProductId { get; set; }
+
+        [Column("STATUS_ID")]
+        public StatusIdConst StatusId { get; set; }
 
         // Navigation properties
         public User User { get; set; } = null!;

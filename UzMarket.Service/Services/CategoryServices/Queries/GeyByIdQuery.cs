@@ -2,8 +2,8 @@
 using UzMarket.Core;
 using Microsoft.EntityFrameworkCore;
 using UzMarket.RepositoryLayer.DataBase;
-using UzMarket.ServiceLayer.MediatorServices.CategoryServices.Dtos;
 using UzMarket.ServiceLayer.Security.AccountServices;
+using UzMarket.ServiceLayer.MediatorServices.CategoryServices.Dtos;
 
 namespace UzMarket.ServiceLayer.MediatorServices.CategoryServices.Queries
 {

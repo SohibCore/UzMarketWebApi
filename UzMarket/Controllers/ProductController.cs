@@ -8,7 +8,6 @@ using UzMarket.ServiceLayer.MediatorServices.ProductServices.Commands;
 
 namespace UzMarket.WebApi.Controllers
 {
-    [Authorize]
     [ApiController]
     [Route("api/[controller]/[action]")]
     public class ProductController : ControllerBase
@@ -43,6 +42,7 @@ namespace UzMarket.WebApi.Controllers
             return Ok(result);
         }
 
+        [Authorize]
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateProductDlDto dto)
         {
@@ -50,6 +50,7 @@ namespace UzMarket.WebApi.Controllers
             return Ok(result);
         }
 
+        [Authorize]
         [HttpPatch]
         public async Task<IActionResult> Update([FromBody] UpdateProductDlDto dto)
         {
@@ -57,6 +58,7 @@ namespace UzMarket.WebApi.Controllers
             return Ok(result);
         }
 
+        [Authorize]
         [HttpDelete("{Id}")]
         public async Task<IActionResult> Delete([FromRoute] long Id)
         {

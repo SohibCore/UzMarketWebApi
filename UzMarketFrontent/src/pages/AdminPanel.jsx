@@ -1,20 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 
-const FALLBACK_CATEGORIES = [
-  { id: 1, name: 'Smartfonlar va Gadjetlar' },
-  { id: 2, name: 'Kompyuter Texnikasi' },
-  { id: 3, name: 'Maishiy Texnika' },
-  { id: 4, name: 'Kiyim va Poyabzallar' },
-  { id: 5, name: 'Kitoblar va Kanselyariya' },
-];
-
 export default function AdminPanel({ products, onRefreshProducts }) {
   const [editingProduct, setEditingProduct] = useState(null); // null if adding new, or holds product object
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ text: '', isError: false });
-  const [categories, setCategories] = useState(FALLBACK_CATEGORIES);
+  const [categories, setCategories] = useState([]);
 
   // Form Fields State
   const [formData, setFormData] = useState({
@@ -22,9 +14,9 @@ export default function AdminPanel({ products, onRefreshProducts }) {
     description: '',
     price: 0,
     stockQuantity: 0,
-    categoryId: 1,
-    supplierId: 1,
-    imageUrl: '', // for main image quick add
+    categoryId: 0,
+    imageUrl: '',
+    imageUrls: [],
   });
 
   useEffect(() => {
@@ -38,14 +30,26 @@ export default function AdminPanel({ products, onRefreshProducts }) {
             : [];
 
         if (normalized.length > 0) {
-          setCategories(normalized.map((cat) => ({
+          const mappedCategories = normalized.map((cat) => ({
             id: cat.id ?? cat.categoryId ?? 0,
             name: cat.name ?? cat.title ?? 'Kategoriya'
-          })));
+          }));
+
+          setCategories(mappedCategories);
+          setFormData(prev => ({
+            ...prev,
+            categoryId: prev.categoryId && mappedCategories.some(cat => cat.id === prev.categoryId)
+              ? prev.categoryId
+              : mappedCategories[0]?.id ?? 0,
+          }));
+        } else {
+          setCategories([]);
+          setFormData(prev => ({ ...prev, categoryId: 0 }));
         }
       } catch (error) {
         console.warn('Kategoriya ro\'yxatini yuklashda xatolik:', error);
-        setCategories(FALLBACK_CATEGORIES);
+        setCategories([]);
+        setFormData(prev => ({ ...prev, categoryId: 0 }));
       }
     }
 
@@ -56,9 +60,29 @@ export default function AdminPanel({ products, onRefreshProducts }) {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'price' || name === 'stockQuantity' || name === 'categoryId' || name === 'supplierId' 
-        ? Number(value) 
+      [name]: name === 'price' || name === 'stockQuantity' || name === 'categoryId'
+        ? Number(value)
         : value
+    }));
+  };
+
+  const handleImageUpload = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+
+    const fileReaders = files.map((file) => new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result || '');
+      reader.readAsDataURL(file);
+    }));
+
+    const results = (await Promise.all(fileReaders)).filter(Boolean);
+    if (!results.length) return;
+
+    setFormData(prev => ({
+      ...prev,
+      imageUrls: [...prev.imageUrls, ...results],
+      imageUrl: results[0] || prev.imageUrl,
     }));
   };
 
@@ -69,9 +93,9 @@ export default function AdminPanel({ products, onRefreshProducts }) {
       description: '',
       price: 0,
       stockQuantity: 0,
-      categoryId: 1,
-      supplierId: 1,
+      categoryId: categories[0]?.id ?? 0,
       imageUrl: '',
+      imageUrls: [],
     });
     setMessage({ text: '', isError: false });
     setIsFormOpen(true);
@@ -79,17 +103,16 @@ export default function AdminPanel({ products, onRefreshProducts }) {
 
   const handleOpenEditForm = (prod) => {
     setEditingProduct(prod);
-    const mainImg = prod.tables && prod.tables.length > 0
-      ? prod.tables.find(t => t.mainPic)?.imageUrl || prod.tables[0].imageUrl
-      : '';
+    const existingImages = (prod.tables || []).map((img) => img.imageUrl || img.url || '').filter(Boolean);
+    const mainImg = existingImages[0] || '';
     setFormData({
       name: prod.name,
       description: prod.description || '',
       price: prod.price,
       stockQuantity: prod.stockQuantity,
-      categoryId: prod.categoryId,
-      supplierId: prod.supplierId,
+      categoryId: prod.categoryId ?? categories[0]?.id ?? 0,
       imageUrl: mainImg,
+      imageUrls: existingImages,
     });
     setMessage({ text: '', isError: false });
     setIsFormOpen(true);
@@ -97,8 +120,8 @@ export default function AdminPanel({ products, onRefreshProducts }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.name || formData.price <= 0 || formData.stockQuantity < 0) {
-      setMessage({ text: 'Iltimos, maydonlarni to\'g\'ri to\'ldiring.', isError: true });
+    if (!formData.name || formData.price <= 0 || formData.stockQuantity < 0 || !formData.categoryId) {
+      setMessage({ text: 'Iltimos, maydonlarni to\'g\'ri to\'ldiring va kategoriya tanlang.', isError: true });
       return;
     }
 
@@ -115,15 +138,12 @@ export default function AdminPanel({ products, onRefreshProducts }) {
           price: formData.price,
           stockQuantity: formData.stockQuantity,
           categoryId: formData.categoryId,
-          supplierId: formData.supplierId,
-          tables: formData.imageUrl ? [
-            {
-              imageUrl: formData.imageUrl,
-              mainPic: true,
-              productId: editingProduct.id,
-              sortOrder: 1
-            }
-          ] : []
+          tables: formData.imageUrls.length > 0 ? formData.imageUrls.map((url, index) => ({
+            imageUrl: url,
+            mainPic: index === 0,
+            productId: editingProduct.id,
+            sortOrder: index + 1
+          })) : []
         };
         await api.products.update(updateDto);
         setMessage({ text: 'Mahsulot muvaffaqiyatli tahrirlandi!', isError: false });
@@ -135,14 +155,11 @@ export default function AdminPanel({ products, onRefreshProducts }) {
           price: formData.price,
           stockQuantity: formData.stockQuantity,
           categoryId: formData.categoryId,
-          supplierId: formData.supplierId,
-          tables: formData.imageUrl ? [
-            {
-              imageUrl: formData.imageUrl,
-              mainPic: true,
-              sortOrder: 1
-            }
-          ] : []
+          tables: formData.imageUrls.length > 0 ? formData.imageUrls.map((url, index) => ({
+            imageUrl: url,
+            mainPic: index === 0,
+            sortOrder: index + 1
+          })) : []
         };
         await api.products.create(createDto);
         setMessage({ text: 'Yangi mahsulot muvaffaqiyatli qo\'shildi!', isError: false });
@@ -287,34 +304,50 @@ export default function AdminPanel({ products, onRefreshProducts }) {
                   value={formData.categoryId}
                   onChange={handleInputChange}
                 >
-                  {(categories.length > 0 ? categories : FALLBACK_CATEGORIES).map((cat) => (
-                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                  ))}
+                  {categories.length > 0 ? (
+                    categories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>{cat.name}</option>
+                    ))
+                  ) : (
+                    <option value={0}>Kategoriya mavjud emas</option>
+                  )}
                 </select>
-              </div>
-
-              <div className="form-group">
-                <label>Yetkazib beruvchi ID (Supplier ID)*</label>
-                <input 
-                  type="number" 
-                  name="supplierId"
-                  className="form-input"
-                  value={formData.supplierId}
-                  onChange={handleInputChange}
-                  required
-                />
+                <small style={{ color: 'var(--text-muted)', display: 'block', marginTop: '6px' }}>
+                  Kategoriya ro‘yxati backenddan olinadi. Yetkazib beruvchi esa server tomondan avtomatik aniqlanadi.
+                </small>
               </div>
 
               <div className="form-group" style={{ gridColumn: 'span 2' }}>
-                <label>Rasm URL manzili (Image URL)</label>
+                <label>Rasm tanlash (bir nechta)</label>
                 <input 
-                  type="text" 
-                  name="imageUrl"
+                  type="file"
+                  accept="image/*"
+                  multiple
                   className="form-input"
-                  value={formData.imageUrl}
-                  onChange={handleInputChange}
-                  placeholder="https://example.com/rasm.jpg"
+                  onChange={handleImageUpload}
+                  style={{ padding: '10px 12px' }}
                 />
+                <small style={{ color: 'var(--text-muted)', display: 'block', marginTop: '6px' }}>
+                  Bir nechta rasmni bir vaqtning o‘zida tanlashingiz mumkin. Ular backendga array sifatida yuboriladi.
+                </small>
+                {formData.imageUrls.length > 0 && (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: '10px', marginTop: '12px' }}>
+                    {formData.imageUrls.map((url, index) => (
+                      <img
+                        key={`${url}-${index}`}
+                        src={url}
+                        alt={`Rasm ${index + 1}`}
+                        style={{
+                          width: '100%',
+                          height: '110px',
+                          objectFit: 'cover',
+                          borderRadius: '10px',
+                          border: '1px solid rgba(255,255,255,0.1)'
+                        }}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
 
             </div>
@@ -381,7 +414,7 @@ export default function AdminPanel({ products, onRefreshProducts }) {
                       </td>
                       <td style={{ padding: '12px', fontWeight: 600 }}>{prod.name}</td>
                       <td style={{ padding: '12px', color: 'var(--text-muted)' }}>
-                        {prod.categoryId === 1 ? 'Smartfon' : prod.categoryId === 2 ? 'Kompyuter' : 'Kategoriya #' + prod.categoryId}
+                        {prod.categoryName || (prod.categoryId === 1 ? 'Smartfon' : prod.categoryId === 2 ? 'Kompyuter' : 'Kategoriya')}
                       </td>
                       <td style={{ padding: '12px', color: 'var(--accent-teal)', fontWeight: 700 }}>
                         {prod.price.toLocaleString('uz-UZ')} UZS

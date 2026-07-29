@@ -169,7 +169,7 @@ export default function ProductDetails({ productId, onAddToCart, onBack }) {
           <div>
             {/* Category tag */}
             <span className="badge badge-primary" style={{ marginBottom: '12px' }}>
-              {product.categoryId === 1 ? 'Smartfon' : product.categoryId === 2 ? 'Kompyuter' : 'Kategoriya #' + product.categoryId}
+              {product.categoryName || (product.categoryId === 1 ? 'Smartfon' : product.categoryId === 2 ? 'Kompyuter' : 'Kategoriya')}
             </span>
 
             <h1 style={{
@@ -183,15 +183,6 @@ export default function ProductDetails({ productId, onAddToCart, onBack }) {
               {product.name}
             </h1>
 
-            {/* Reviews and Ratings mock */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{ display: 'flex', color: '#ffb830' }}>
-                {'★★★★★'.split('').map((s, i) => (
-                  <span key={i} style={{ fontSize: '1.1rem' }}>{s}</span>
-                ))}
-              </div>
-              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>(14 ta xaridor bahosi)</span>
-            </div>
           </div>
 
           {/* Price Container */}

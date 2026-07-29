@@ -1,75 +1,95 @@
 // API Helper service for UzMarket
 // Uses Vite dev server proxy in development, pointing to /api
-const BASE_URL = '/api';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+const FALLBACK_BASE_URLS = [
+  BASE_URL,
+  BASE_URL === '/api' ? 'http://localhost:5089/api' : null,
+].filter(Boolean);
 
 /**
  * Helper to perform fetch calls with credentials and JSON headers.
  */
 async function request(endpoint, options = {}) {
-  const url = `${BASE_URL}${endpoint}`;
+  const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   const timeoutMs = options.timeout ?? 8000;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-  
-  // Ensure cookies are sent (needed for Cookie-based Auth)
-  options.credentials = 'include';
-  options.signal = controller.signal;
-  
-  options.headers = {
-    'Content-Type': 'application/json',
-    ...options.headers,
-  };
 
-  if (options.body && typeof options.body === 'object') {
-    options.body = JSON.stringify(options.body);
-  }
+  let lastError = null;
 
-  try {
-    const response = await fetch(url, options);
-    
-    if (response.status === 401) {
-      // Return null or throw unauthorized
-      const err = new Error('Unauthorized');
-      err.status = 401;
-      throw err;
+  for (let index = 0; index < FALLBACK_BASE_URLS.length; index += 1) {
+    const baseUrl = FALLBACK_BASE_URLS[index];
+    const url = `${baseUrl}${normalizedEndpoint}`;
+
+    const requestOptions = {
+      ...options,
+      credentials: 'include',
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(options.headers || {}),
+      },
+    };
+
+    if (requestOptions.body && typeof requestOptions.body === 'object') {
+      requestOptions.body = JSON.stringify(requestOptions.body);
     }
-    
-    if (!response.ok) {
-      let errorMessage = `API Error: ${response.status}`;
-      try {
-        const text = await response.text();
-        errorMessage = text || errorMessage;
-      } catch (e) {
-        // ignore
+
+    try {
+      const response = await fetch(url, requestOptions);
+
+      if (response.status === 401) {
+        const err = new Error('Unauthorized');
+        err.status = 401;
+        throw err;
       }
-      const err = new Error(errorMessage);
-      err.status = response.status;
-      throw err;
-    }
 
-    // Some endpoints return empty body or plain text/number on Success (e.g. Logout, Delete, Create returning ID)
-    const contentType = response.headers.get('content-type');
-    if (contentType && contentType.includes('application/json')) {
-      return await response.json();
-    }
-    
-    const text = await response.text();
-    if (text === 'true') return true;
-    if (text === 'false') return false;
-    if (text && !isNaN(Number(text))) return Number(text);
-    return text;
-  } catch (error) {
-    if (error.name === 'AbortError') {
-      const timeoutError = new Error('Request timed out');
-      timeoutError.status = 504;
-      throw timeoutError;
-    }
+      if (!response.ok) {
+        const status = response.status;
+        if ((status === 404 || status === 405) && index < FALLBACK_BASE_URLS.length - 1) {
+          continue;
+        }
 
-    console.error(`Request to ${url} failed:`, error);
-    throw error;
-  } finally {
-    clearTimeout(timeoutId);
+        let errorMessage = `API Error: ${status}`;
+        try {
+          const text = await response.text();
+          errorMessage = text || errorMessage;
+        } catch (e) {
+          // ignore
+        }
+        const err = new Error(errorMessage);
+        err.status = status;
+        throw err;
+      }
+
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        return await response.json();
+      }
+
+      const text = await response.text();
+      if (text === 'true') return true;
+      if (text === 'false') return false;
+      if (text && !isNaN(Number(text))) return Number(text);
+      return text;
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        const timeoutError = new Error('Request timed out');
+        timeoutError.status = 504;
+        throw timeoutError;
+      }
+
+      lastError = error;
+      if (index < FALLBACK_BASE_URLS.length - 1) {
+        continue;
+      }
+
+      console.error(`Request to ${url} failed:`, error);
+      throw error;
+    }
   }
+
+  throw lastError || new Error('API request failed');
 }
 
 export const api = {

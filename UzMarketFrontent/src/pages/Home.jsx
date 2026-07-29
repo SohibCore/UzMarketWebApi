@@ -196,9 +196,6 @@ export default function Home({
           }}>
             {searchQuery ? `Qidiruv natijalari: "${searchQuery}"` : 'Barcha Mahsulotlar'}
           </h2>
-          <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-            {filteredProducts.length} ta mahsulot topildi
-          </span>
         </div>
 
         {loading ? (
