@@ -2,7 +2,7 @@
 {
     public class CreateOrderDlDto
     {
-        public string OrderDate { get; set; } = null!;
+        public DateTime OrderDate { get; set; } 
         public int ShippingAddressId { get; set; }
 
         public ICollection<CreateOrderItemDlDto> Items { get; set; } = new List<CreateOrderItemDlDto>();

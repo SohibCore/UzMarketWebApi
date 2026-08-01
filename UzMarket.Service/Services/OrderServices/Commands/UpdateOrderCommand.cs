@@ -34,8 +34,13 @@ namespace UzMarket.ServiceLayer.MediatorServices.OrderServices.Commands
 
             var products = await _context.Products.Where(x => productId.Contains(x.Id) && x.StatusId != (int)StatusIdConst.DELETED).ToListAsync(cancellation);
 
-            if (request.dto.OrderDate != null)
-                order.OrderDate = request.dto.OrderDate;
+            order.OrderDate = request.dto.OrderDate;
+            order.ShippingAddressId = request.dto.ShippingAddressId;
+
+            var address = await _context.Addresses.SingleOrDefaultAsync(x => x.Id == order.ShippingAddressId && x.StatusId != (int)StatusIdConst.DELETED && x.UserId == _service.UserId, cancellation);
+
+            if (address == null)
+                throw new NotFoundException("Address not found.");
 
             order.StatusId = (int)StatusIdConst.MODIFIED;
             order.ModifiedAt = DateTime.UtcNow;

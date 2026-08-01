@@ -28,10 +28,16 @@ namespace UzMarket.ServiceLayer.MediatorServices.OrderServices.Commands
                 UserId = _service.UserId,
                 OrderDate = request.dto.OrderDate,
                 OrderStatusId = (int)OrderStatus.PENDING,
+                ShippingAddressId = request.dto.ShippingAddressId,
 
                 CreatedAt = DateTime.UtcNow,
                 CreateUserId = _service.UserId,
             };
+
+            var address = await _context.Addresses.SingleOrDefaultAsync(x => x.Id == order.ShippingAddressId && x.StatusId != (int)StatusIdConst.DELETED && x.UserId == _service.UserId, cancellation);
+
+            if (address == null)
+                throw new NotFoundException("Address not found.");
 
             decimal totalAmount = 0;
 

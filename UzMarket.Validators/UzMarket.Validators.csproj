@@ -18,6 +18,7 @@
 	<ItemGroup>
 	  <Folder Include="Address\" />
 	  <Folder Include="Category\" />
+	  <Folder Include="Favorite\" />
 	</ItemGroup>
 
 </Project>

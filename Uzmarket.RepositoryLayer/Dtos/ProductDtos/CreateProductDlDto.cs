@@ -8,6 +8,6 @@
         public int StockQuantity { get; set; }
         public long CategoryId { get; set; }
 
-        public ICollection<CreateProductImageDlDto> Tables { get; set; } = new List<CreateProductImageDlDto>();
+        public ICollection<CreateProductImageDlDto> Items { get; set; } = new List<CreateProductImageDlDto>();
     }
 }

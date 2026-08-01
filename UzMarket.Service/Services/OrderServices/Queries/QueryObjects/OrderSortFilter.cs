@@ -6,9 +6,6 @@ namespace UzMarket.ServiceLayer.MediatorServices.OrderServices.Queries.QueryObje
     {
         public static IQueryable<OrderListDto> SortFilter(this IQueryable<OrderListDto> query, OrderFilterDto filter)
         {
-            if (!string.IsNullOrWhiteSpace(filter.OrderDate))
-                query = query.Where(x => x.OrderDate == filter.OrderDate);
-
             if (filter.TotalAmount.HasValue)
                 query = query.Where(x => x.TotalAmount == filter.TotalAmount.Value);
 

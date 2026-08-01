@@ -7,6 +7,9 @@ namespace UzMarket.Validators
     {
         public UpdateOrderItemValidator()
         {
+            RuleFor(x => x.Id)
+                .GreaterThan(0).WithMessage("A valid Order Id is required to identify which item to update.");
+
             RuleFor(x => x.Quantity)
                 .GreaterThan(0).WithMessage("The Quantity field must be a valid quantity.")
                 .When(x => x.Quantity != null);
@@ -15,11 +18,6 @@ namespace UzMarket.Validators
                 .Cascade(CascadeMode.Stop)
                 .GreaterThan(0).WithMessage("The ProductId field must be a valid address.")
                 .When(x => x.ProductId != null);
-
-            RuleFor(x => x.Price)
-                .Cascade(CascadeMode.Stop)
-                .GreaterThan(0).WithMessage("The Price field must be a valid quantity.")
-                .When(x => x.Price != null);
         }
     }
 }

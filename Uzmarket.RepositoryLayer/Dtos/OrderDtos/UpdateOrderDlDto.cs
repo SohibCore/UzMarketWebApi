@@ -4,8 +4,8 @@
     {
         public long? Id { get; set; }
         public long? OrderStatusId { get; set; }
-        public int? ShippingAddressId { get; set; }
-        public string? OrderDate { get; set; }
+        public int ShippingAddressId { get; set; }
+        public DateTime OrderDate { get; set; }
 
         public ICollection<UpdateOrderItemDlDto> Tables { get; set; } = new List<UpdateOrderItemDlDto>();
     }

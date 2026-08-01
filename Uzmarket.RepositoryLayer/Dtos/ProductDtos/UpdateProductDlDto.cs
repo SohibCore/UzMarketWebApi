@@ -10,6 +10,6 @@
         public long CategoryId { get; set; }
         public long SupplierId { get; set; }
 
-        public ICollection<UpdateProductImageDlDto> Tables { get; set; } = new List<UpdateProductImageDlDto>();
+        public ICollection<UpdateProductImageDlDto> Items { get; set; } = new List<UpdateProductImageDlDto>();
     }
 }

@@ -20,7 +20,7 @@ namespace UzMarket.RepositoryLayer.Entity
         public long UserId { get; set; }
 
         [Column("RATING")]
-        public int RatingId { get; set; }
+        public int? RatingId { get; set; }
 
         [Column("COMMENT")]
         public string? Comment { get; set; }

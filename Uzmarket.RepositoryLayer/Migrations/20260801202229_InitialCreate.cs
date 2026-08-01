@@ -76,27 +76,6 @@ namespace UzMarket.RepositoryLayer.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "SYS_REVIEW",
-                columns: table => new
-                {
-                    ID = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    PRODUCT_ID = table.Column<long>(type: "bigint", nullable: false),
-                    USER_ID = table.Column<long>(type: "bigint", nullable: false),
-                    RATING = table.Column<int>(type: "integer", nullable: false),
-                    COMMENT = table.Column<string>(type: "text", nullable: true),
-                    CREATED_USER_ID = table.Column<int>(type: "integer", nullable: true),
-                    CREATED_AT = table.Column<DateTime>(type: "timestamp without time zone", nullable: true),
-                    MODIFIED_USER_ID = table.Column<int>(type: "integer", nullable: true),
-                    MODIFIED_AT = table.Column<DateTime>(type: "timestamp without time zone", nullable: true),
-                    Rating = table.Column<int>(type: "integer", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_SYS_REVIEW", x => x.ID);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "SYS_USER",
                 columns: table => new
                 {
@@ -113,9 +92,9 @@ namespace UzMarket.RepositoryLayer.Migrations
                     PASSPORT_SERIES = table.Column<string>(type: "character varying(9)", maxLength: 9, nullable: false),
                     EMAIL = table.Column<string>(type: "text", nullable: false),
                     STATUS_ID = table.Column<int>(type: "integer", nullable: false),
-                    CREATED_USER_ID = table.Column<int>(type: "integer", nullable: true),
+                    CREATED_USER_ID = table.Column<long>(type: "bigint", nullable: true),
                     CREATED_AT = table.Column<DateTime>(type: "timestamp without time zone", nullable: true),
-                    MODIFIED_USER_ID = table.Column<int>(type: "integer", nullable: true),
+                    MODIFIED_USER_ID = table.Column<long>(type: "bigint", nullable: true),
                     MODIFIED_AT = table.Column<DateTime>(type: "timestamp without time zone", nullable: true),
                     StatusIdConst = table.Column<int>(type: "integer", nullable: false)
                 },
@@ -221,7 +200,7 @@ namespace UzMarket.RepositoryLayer.Migrations
                     ID = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     USER_ID = table.Column<long>(type: "bigint", nullable: false),
-                    ORDER_DATE = table.Column<string>(type: "text", nullable: false),
+                    ORDER_DATE = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
                     TOTAL_AMOUNT = table.Column<decimal>(type: "numeric", nullable: false),
                     ORDER_STATUS_ID = table.Column<int>(type: "integer", nullable: false),
                     SHIPPING_ADDRESS_ID = table.Column<int>(type: "integer", nullable: false),
@@ -281,10 +260,11 @@ namespace UzMarket.RepositoryLayer.Migrations
                 name: "SYS_FAVORITE",
                 columns: table => new
                 {
-                    ID = table.Column<long>(type: "bigint", nullable: false)
+                    ID = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     USER_ID = table.Column<long>(type: "bigint", nullable: false),
-                    PRODUCT_ID = table.Column<long>(type: "bigint", nullable: false)
+                    PRODUCT_ID = table.Column<long>(type: "bigint", nullable: false),
+                    STATUS_ID = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -322,6 +302,40 @@ namespace UzMarket.RepositoryLayer.Migrations
                         column: x => x.ProductId,
                         principalTable: "SYS_PRODUCT",
                         principalColumn: "ID");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "SYS_REVIEW",
+                columns: table => new
+                {
+                    ID = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    PRODUCT_ID = table.Column<long>(type: "bigint", nullable: false),
+                    USER_ID = table.Column<long>(type: "bigint", nullable: false),
+                    RATING = table.Column<int>(type: "integer", nullable: true),
+                    COMMENT = table.Column<string>(type: "text", nullable: true),
+                    STATUS_ID = table.Column<int>(type: "integer", nullable: false),
+                    CREATED_USER_ID = table.Column<long>(type: "bigint", nullable: true),
+                    CREATED_AT = table.Column<DateTime>(type: "timestamp without time zone", nullable: true),
+                    MODIFIED_USER_ID = table.Column<long>(type: "bigint", nullable: true),
+                    MODIFIED_AT = table.Column<DateTime>(type: "timestamp without time zone", nullable: true),
+                    Rating = table.Column<int>(type: "integer", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_SYS_REVIEW", x => x.ID);
+                    table.ForeignKey(
+                        name: "FK_SYS_REVIEW_SYS_PRODUCT_PRODUCT_ID",
+                        column: x => x.PRODUCT_ID,
+                        principalTable: "SYS_PRODUCT",
+                        principalColumn: "ID",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_SYS_REVIEW_SYS_USER_USER_ID",
+                        column: x => x.USER_ID,
+                        principalTable: "SYS_USER",
+                        principalColumn: "ID",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -425,6 +439,16 @@ namespace UzMarket.RepositoryLayer.Migrations
                 name: "IX_SYS_PRODUCT_IMAGE_ProductId",
                 table: "SYS_PRODUCT_IMAGE",
                 column: "ProductId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SYS_REVIEW_PRODUCT_ID",
+                table: "SYS_REVIEW",
+                column: "PRODUCT_ID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SYS_REVIEW_USER_ID",
+                table: "SYS_REVIEW",
+                column: "USER_ID");
         }
 
         /// <inheritdoc />

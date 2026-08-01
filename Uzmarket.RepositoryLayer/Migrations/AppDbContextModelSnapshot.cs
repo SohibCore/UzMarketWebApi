@@ -232,16 +232,20 @@ namespace UzMarket.RepositoryLayer.Migrations
 
             modelBuilder.Entity("UzMarket.RepositoryLayer.Entity.Favorite", b =>
                 {
-                    b.Property<long>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint")
+                        .HasColumnType("integer")
                         .HasColumnName("ID");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<long>("ProductId")
                         .HasColumnType("bigint")
                         .HasColumnName("PRODUCT_ID");
+
+                    b.Property<int>("StatusId")
+                        .HasColumnType("integer")
+                        .HasColumnName("STATUS_ID");
 
                     b.Property<long>("UserId")
                         .HasColumnType("bigint")
@@ -281,9 +285,8 @@ namespace UzMarket.RepositoryLayer.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("MODIFIED_USER_ID");
 
-                    b.Property<string>("OrderDate")
-                        .IsRequired()
-                        .HasColumnType("text")
+                    b.Property<DateTime>("OrderDate")
+                        .HasColumnType("timestamp without time zone")
                         .HasColumnName("ORDER_DATE");
 
                     b.Property<int>("OrderStatus")
@@ -538,8 +541,8 @@ namespace UzMarket.RepositoryLayer.Migrations
                         .HasColumnType("text")
                         .HasColumnName("COMMENT");
 
-                    b.Property<int?>("CreateUserId")
-                        .HasColumnType("integer")
+                    b.Property<long?>("CreateUserId")
+                        .HasColumnType("bigint")
                         .HasColumnName("CREATED_USER_ID");
 
                     b.Property<DateTime?>("CreatedAt")
@@ -550,8 +553,8 @@ namespace UzMarket.RepositoryLayer.Migrations
                         .HasColumnType("timestamp without time zone")
                         .HasColumnName("MODIFIED_AT");
 
-                    b.Property<int?>("ModifiedUserId")
-                        .HasColumnType("integer")
+                    b.Property<long?>("ModifiedUserId")
+                        .HasColumnType("bigint")
                         .HasColumnName("MODIFIED_USER_ID");
 
                     b.Property<long>("ProductId")
@@ -561,15 +564,23 @@ namespace UzMarket.RepositoryLayer.Migrations
                     b.Property<int>("Rating")
                         .HasColumnType("integer");
 
-                    b.Property<int>("RatingId")
+                    b.Property<int?>("RatingId")
                         .HasColumnType("integer")
                         .HasColumnName("RATING");
+
+                    b.Property<int>("StatusId")
+                        .HasColumnType("integer")
+                        .HasColumnName("STATUS_ID");
 
                     b.Property<long>("UserId")
                         .HasColumnType("bigint")
                         .HasColumnName("USER_ID");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("SYS_REVIEW");
                 });
@@ -589,8 +600,8 @@ namespace UzMarket.RepositoryLayer.Migrations
                         .HasColumnType("character varying(300)")
                         .HasColumnName("ADDRESS");
 
-                    b.Property<int?>("CreateUserId")
-                        .HasColumnType("integer")
+                    b.Property<long?>("CreateUserId")
+                        .HasColumnType("bigint")
                         .HasColumnName("CREATED_USER_ID");
 
                     b.Property<DateTime?>("CreatedAt")
@@ -624,8 +635,8 @@ namespace UzMarket.RepositoryLayer.Migrations
                         .HasColumnType("timestamp without time zone")
                         .HasColumnName("MODIFIED_AT");
 
-                    b.Property<int?>("ModifiedUserId")
-                        .HasColumnType("integer")
+                    b.Property<long?>("ModifiedUserId")
+                        .HasColumnType("bigint")
                         .HasColumnName("MODIFIED_USER_ID");
 
                     b.Property<string>("PassportSeries")
@@ -801,6 +812,25 @@ namespace UzMarket.RepositoryLayer.Migrations
                     b.HasOne("UzMarket.RepositoryLayer.Entity.Product", null)
                         .WithMany("Tables")
                         .HasForeignKey("ProductId");
+                });
+
+            modelBuilder.Entity("UzMarket.RepositoryLayer.Entity.Review", b =>
+                {
+                    b.HasOne("UzMarket.RepositoryLayer.Entity.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("UzMarket.RepositoryLayer.Entity.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("UzMarket.RepositoryLayer.Entity.Cart", b =>

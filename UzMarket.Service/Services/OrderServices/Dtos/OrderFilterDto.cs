@@ -2,7 +2,7 @@
 {
     public class OrderFilterDto
     {
-        public string? OrderDate { get; set; } = null!;
+        public DateTime OrderDate { get; set; } 
         public decimal? TotalAmount { get; set; }
         public int? OrderStatusId { get; set; }
         public int? ShippingAddressId { get; set; }

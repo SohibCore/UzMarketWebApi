@@ -1,4 +1,7 @@
 ﻿using MediatR;
+using UzMarket.Core;
+using OpenQA.Selenium;
+using Microsoft.EntityFrameworkCore;
 using UzMarket.RepositoryLayer.Entity;
 using UzMarket.RepositoryLayer.DataBase;
 using UzMarket.RepositoryLayer.Dtos.ReviewDtos;
@@ -20,6 +23,11 @@ namespace UzMarket.ServiceLayer.Services.ReviewServices.Commands
 
         public async Task<int> Handle(CreateReviewCommand request, CancellationToken cancellation)
         {
+            var product = await _context.Products.AnyAsync(x => x.StatusId != (int)StatusIdConst.DELETED && x.SupplierId == _service.UserId && x.Id == request.dto.ProductId, cancellation);
+
+            if (!product)
+                throw new NotFoundException($"Product not found : {request.dto.ProductId}");
+
             var review = new Review
             {
                 ProductId = request.dto.ProductId,

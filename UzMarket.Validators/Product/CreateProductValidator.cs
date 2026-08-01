@@ -8,10 +8,17 @@ namespace UzMarket.Validators.Product
         public CreateProductValidator(IValidator<CreateProductImageDlDto> validator)
         {
             RuleFor(x => x.Name)
-                .NotEmpty().WithMessage("The Name field is required.");
+                .Cascade(CascadeMode.Stop)
+                .NotEmpty().WithMessage("The Name field is required.")
+                .Must(x => !string.IsNullOrWhiteSpace(x)).WithMessage("The Name field cannot be empty.")
+                .MinimumLength(3).WithMessage("The Name must be at least 3 character.")
+                .MaximumLength(200).WithMessage("The Name must not exceed 200 characters.");
 
             RuleFor(x => x.Description)
-                .NotEmpty().WithMessage("The Description field is required.");
+                .Cascade(CascadeMode.Stop)
+                .Must(x => !string.IsNullOrWhiteSpace(x)).WithMessage("The Description field cannot be empty.")
+                .MinimumLength(3).WithMessage("The Name must be at least 3 character.")
+                .MaximumLength(1000).WithMessage("The Name must not exceed 1000 characters.");
 
             RuleFor(x => x.Price)
                 .Cascade(CascadeMode.Stop)
@@ -23,12 +30,12 @@ namespace UzMarket.Validators.Product
                 .GreaterThan(0).WithMessage("The StockQuantity field must be a valid.");
 
             RuleFor(x => x.CategoryId)
-                .GreaterThan(0).WithMessage("The CategoryId field must be a valid.");
+                .GreaterThan(0).WithMessage("The Category field must be a valid.");
 
-            RuleFor(x => x.Tables)
+            RuleFor(x => x.Items)
                 .NotEmpty().WithMessage("The Product must contain at least one item.");
 
-            RuleForEach(x => x.Tables)
+            RuleForEach(x => x.Items)
                 .SetValidator(validator);
         }
     }

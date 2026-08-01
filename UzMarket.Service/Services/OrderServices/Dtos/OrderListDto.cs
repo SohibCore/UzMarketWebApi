@@ -4,7 +4,7 @@
     {
         public long Id { get; set; }
         public long UserId { get; set; }
-        public string OrderDate { get; set; } = null!;
+        public DateTime OrderDate { get; set; } 
         public decimal TotalAmount { get; set; }
         public int OrderStatusId { get; set; }
         public int ShippingAddressId { get; set; }

@@ -17,7 +17,7 @@ namespace UzMarket.RepositoryLayer.Entity
         public long UserId { get; set; }
 
         [Column("ORDER_DATE")]
-        public string OrderDate { get; set; } = null!;
+        public DateTime OrderDate { get; set; } 
 
         [Column("TOTAL_AMOUNT")]
         public decimal TotalAmount { get; set; }

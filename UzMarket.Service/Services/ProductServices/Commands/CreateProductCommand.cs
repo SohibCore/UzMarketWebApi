@@ -21,9 +21,9 @@ namespace UzMarket.ServiceLayer.MediatorServices.ProductServices.Commands
         }
         public async Task<long> Handle(CreateProductCommand request, CancellationToken cancellationToken)
         {
-            var category = await _context.Categories.FirstOrDefaultAsync(x => x.Id == request.dto.CategoryId, cancellationToken);
+            var category = await _context.Categories.AnyAsync(x => x.Id == request.dto.CategoryId && x.StatusId != (int)StatusIdConst.DELETED, cancellationToken);
 
-            if (category == null)
+            if (!category)
                 throw new Exception($"Category not found : {request.dto.CategoryId}");
 
             var product = new Product
@@ -39,14 +39,14 @@ namespace UzMarket.ServiceLayer.MediatorServices.ProductServices.Commands
                 CreatedAt = DateTime.UtcNow,
                 CreateUserId = _service.UserId,
 
-                Tables = request.dto.Tables.Select(x => new ProductImage
+                //Selectda indexlab olindi va Asosiy rasmga to'g'irlandi
+                Tables = request.dto.Items.Select((x, Index) => new ProductImage
                 {
                     ImageUrl = x.ImageUrl,
-                    MainPic = x.MainPic,
+                    MainPic = Index == 0,
                     SortOrder = x.SortOrder,
                 }).ToList()
             };
-
             await _context.Products.AddAsync(product, cancellationToken);
             await _context.SaveChangesAsync(cancellationToken);
             return product.Id;

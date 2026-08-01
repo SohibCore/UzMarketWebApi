@@ -12,9 +12,6 @@ namespace UzMarket.ServiceLayer.MediatorServices.CategoryServices.Queries.Object
             if (!string.IsNullOrWhiteSpace(filter.Name))
                 query = query.Where(x => x.Name.ToLower() == filter.Name.ToLower());
 
-            if (!string.IsNullOrWhiteSpace(filter.Description))
-                query = query.Where(x => x.Description.ToLower() == filter.Description.ToLower());
-
             return query;
         }
     }

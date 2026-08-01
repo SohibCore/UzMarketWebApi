@@ -1,6 +1,6 @@
 ﻿using MediatR;
-using Microsoft.EntityFrameworkCore;
 using OpenQA.Selenium;
+using Microsoft.EntityFrameworkCore;
 using UzMarket.RepositoryLayer.DataBase;
 using UzMarket.RepositoryLayer.Dtos.ReviewDtos;
 using UzMarket.ServiceLayer.Security.AccountServices;

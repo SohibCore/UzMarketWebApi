@@ -14,8 +14,7 @@ namespace UzMarket.Validators
 
             RuleFor(x => x.ShippingAddressId)
                 .Cascade(CascadeMode.Stop)
-                .GreaterThan(0).WithMessage("The ShippingAddressId field must be a valid address.")
-                .When(x => x.ShippingAddressId != null);
+                .GreaterThan(0).WithMessage("The ShippingAddressId field must be a valid address.");
 
             RuleFor(x => x.Tables)
                 .Cascade(CascadeMode.Stop)
