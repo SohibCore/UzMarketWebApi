@@ -7,13 +7,19 @@ namespace UzMarket.Validators.Cart
     {
         public UpdateCartValidator(IValidator<UpdateCartItemDlDto> validator)
         {
+            RuleFor(x => x.Id)
+                .GreaterThan(0).WithMessage("Id is required");
+
             RuleFor(x => x.StatusId)
                 .NotEmpty().WithMessage("The OrderStatusId field is required.")
                 .When(x => x.StatusId != null);
 
-            RuleForEach(x => x.Tables)
-                .SetValidator(validator)
-                .When(x => x.Tables != null);
+
+            RuleFor(x => x.Items)
+                .NotEmpty().WithMessage("The Cart must contain at least one item.")
+                .When(x => x.Items != null);
+
+            RuleForEach(x => x.Items).SetValidator(validator);
         }
     }
 }

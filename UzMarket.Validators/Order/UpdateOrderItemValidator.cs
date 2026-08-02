@@ -11,13 +11,12 @@ namespace UzMarket.Validators
                 .GreaterThan(0).WithMessage("A valid Order Id is required to identify which item to update.");
 
             RuleFor(x => x.Quantity)
-                .GreaterThan(0).WithMessage("The Quantity field must be a valid quantity.")
-                .When(x => x.Quantity != null);
+                .Cascade(CascadeMode.Stop)
+                .GreaterThan(0).WithMessage("The Quantity field must be a valid quantity.");
 
             RuleFor(x => x.ProductId)
                 .Cascade(CascadeMode.Stop)
-                .GreaterThan(0).WithMessage("The ProductId field must be a valid address.")
-                .When(x => x.ProductId != null);
+                .GreaterThan(0).WithMessage("The Product field must be a valid address.");
         }
     }
 }

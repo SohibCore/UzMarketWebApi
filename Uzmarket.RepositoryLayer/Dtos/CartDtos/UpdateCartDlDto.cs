@@ -4,6 +4,6 @@
     {
         public long Id { get; set; }
         public int? StatusId { get; set; }
-        public ICollection<UpdateCartItemDlDto> Tables { get; set; } = new List<UpdateCartItemDlDto>();
+        public ICollection<UpdateCartItemDlDto> Items { get; set; } = new List<UpdateCartItemDlDto>();
     }
 }

@@ -15,10 +15,4 @@
 	  <ProjectReference Include="..\Uzmarket.RepositoryLayer\UzMarket.RepositoryLayer.csproj" />
 	</ItemGroup>
 
-	<ItemGroup>
-	  <Folder Include="Address\" />
-	  <Folder Include="Category\" />
-	  <Folder Include="Favorite\" />
-	</ItemGroup>
-
 </Project>

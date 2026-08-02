@@ -35,7 +35,7 @@ namespace UzMarket.ServiceLayer.MediatorServices.CartServices.Commands
 
             _context.CartItems.RemoveRange(cart.Items);
 
-            cart.Items = request.dto.Tables.Select(x => new CartItem
+            cart.Items = request.dto.Items.Select(x => new CartItem
             {
                 ProductId = x.ProductId,
                 Quantity = x.Quantity,

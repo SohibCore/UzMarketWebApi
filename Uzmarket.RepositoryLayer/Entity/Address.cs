@@ -17,18 +17,22 @@ namespace UzMarket.RepositoryLayer.Entity
         public long UserId { get; set; }
 
         [Column("REGION")]
+        [StringLength(100)]
         public string Region { get; set; } = null!;
 
         [Column("CITY")]
+        [StringLength(100)]
         public string City { get; set; } = null!;
 
         [Column("STREET")]
+        [StringLength(300)]
         public string Street { get; set; } = null!;
 
         [Column("POSTAL_CODE")]
+        [StringLength(20)]
         public string PostalCode { get; set; } = null!;
 
-        [Column("IS_DIFAULT")]
+        [Column("IS_DEFAULT")]
         public bool IsDefault { get; set; }
 
         [Column("STATUS_ID")]

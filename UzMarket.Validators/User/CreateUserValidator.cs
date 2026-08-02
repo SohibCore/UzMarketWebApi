@@ -54,7 +54,7 @@ namespace UzMarket.Validators.User
             RuleFor(x => x.Address)
                 .Cascade(CascadeMode.Stop)
                 .NotEmpty().WithMessage("The Address field is required.")
-                .Must(x => !string.IsNullOrWhiteSpace(x)).WithMessage("The Address field is required.")
+                .Must(x => !string.IsNullOrWhiteSpace(x)).WithMessage("The Address cannot be empty.")
                 .MinimumLength(3).WithMessage("The Address must be at least 3 character.")
                 .MaximumLength(300).WithMessage("The Address must not exceed 300 characters.");
 

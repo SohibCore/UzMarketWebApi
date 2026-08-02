@@ -1,5 +1,6 @@
 ﻿using MediatR;
 using UzMarket.Core;
+using Microsoft.EntityFrameworkCore;
 using UzMarket.RepositoryLayer.Entity;
 using UzMarket.RepositoryLayer.DataBase;
 using UzMarket.RepositoryLayer.Dtos.CategoryDtos;
@@ -31,6 +32,10 @@ namespace UzMarket.ServiceLayer.MediatorServices.CategoryServices.Commands
                 CreatedAt = DateTime.UtcNow,
                 CreateUserId = _service.UserId
             };
+
+            var categoryName = await _context.Categories.AnyAsync(x => x.Name == category.Name && x.StatusId != (int)StatusIdConst.DELETED, cancellationToken);
+            if (categoryName)
+                throw new Exception("Category already exists");
 
             await _context.Categories.AddAsync(category);
             await _context.SaveChangesAsync(cancellationToken);

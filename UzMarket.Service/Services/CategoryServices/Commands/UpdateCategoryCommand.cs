@@ -4,6 +4,7 @@ using UzMarket.RepositoryLayer.DataBase;
 using UzMarket.RepositoryLayer.Dtos.CategoryDtos;
 using UzMarket.Core;
 using UzMarket.ServiceLayer.Security.AccountServices;
+using OpenQA.Selenium;
 
 namespace UzMarket.ServiceLayer.MediatorServices.CategoryServices.Commands
 {
@@ -24,16 +25,21 @@ namespace UzMarket.ServiceLayer.MediatorServices.CategoryServices.Commands
             var category = await _context.Categories.FirstOrDefaultAsync(x => x.Id == request.dto.Id && x.StatusId != (int)StatusIdConst.DELETED);
 
             if (category == null)
-                throw new Exception($"{request.dto.Id} - not found");
+                throw new NotFoundException($"{request.dto.Id} - not found.");
 
             if (request.dto.ParentCategoryId != null)
             {
                 if (request.dto.ParentCategoryId == request.dto.Id)
-                    throw new Exception($"Category cannot be its own parent");
+                    throw new Exception($"Category cannot be its own parent.");
             }
 
             if (category.Name != request.dto.Name)
                 category.Name = request.dto.Name;
+
+            var categoryName = await _context.Categories.AnyAsync(x => x.StatusId != (int)StatusIdConst.DELETED && x.Name != request.dto.Name, cancellationToken);
+
+            if (categoryName)
+                throw new Exception($"This Name - {request.dto.Name} is already exists.");
 
             if (request.dto.Description != null && category.Description != request.dto.Description)
                 category.Description = request.dto.Description;
