@@ -8,8 +8,7 @@ namespace UzMarket.Validators.Product
         public CreateProductImageValidator()
         {
             RuleFor(x => x.ImageUrl)
-                .NotEmpty().WithMessage("The Image field is required.")
-                .Must(x => !string.IsNullOrWhiteSpace(x)).WithMessage("The ImageUrl field cannot be empty.");
+                .NotEmpty().WithMessage("The Image field is required.");
 
             RuleFor(x => x.SortOrder)
                 .GreaterThan(0).WithMessage("The SortOrder field is required.");

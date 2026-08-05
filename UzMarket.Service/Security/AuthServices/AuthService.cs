@@ -1,19 +1,24 @@
-﻿using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
+﻿using MediatR;
 using UzMarket.Core;
+using System.Security.Claims;
+using Microsoft.EntityFrameworkCore;
+using UzMarket.RepositoryLayer.Entity;
 using UzMarket.RepositoryLayer.DataBase;
 using UzMarket.RepositoryLayer.Dtos.AuthDtos;
 using UzMarket.RepositoryLayer.Dtos.UserDtos;
-using UzMarket.RepositoryLayer.Entity;
+using UzMarket.ServiceLayer.Services.RegisterServices.Commands;
 
 namespace UzMarket.ServiceLayer.Security.AuthServices
 {
     public class AuthService : IAuthService
     {
         private readonly AppDbContext _context;
-        public AuthService(AppDbContext context)
+        private readonly IMediator _mediator;
+
+        public AuthService(AppDbContext context, IMediator mediator)
         {
             _context = context;
+            _mediator = mediator;
         }
 
         public async Task<AuthResult> RegisterAsync(CreateUserDlDto dto, CancellationToken cancellationToken)
@@ -82,6 +87,11 @@ namespace UzMarket.ServiceLayer.Security.AuthServices
 
             var identity = new ClaimsIdentity(claims, "Cookies");
             return new ClaimsPrincipal(identity);
+        }
+
+        public async Task<AuthResult> VerifyEmailAsync(VerifyEmailCommand command)
+        {
+            return await _mediator.Send(command);
         }
     }
 }

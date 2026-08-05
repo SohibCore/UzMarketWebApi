@@ -14,6 +14,7 @@ async function request(endpoint, options = {}) {
   const timeoutMs = options.timeout ?? 8000;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  const shouldRetryFallback = options.retry !== false;
 
   let lastError = null;
 
@@ -46,7 +47,7 @@ async function request(endpoint, options = {}) {
 
       if (!response.ok) {
         const status = response.status;
-        if ((status === 404 || status === 405) && index < FALLBACK_BASE_URLS.length - 1) {
+        if (shouldRetryFallback && (status === 404 || status === 405) && index < FALLBACK_BASE_URLS.length - 1) {
           continue;
         }
 
@@ -80,12 +81,16 @@ async function request(endpoint, options = {}) {
       }
 
       lastError = error;
-      if (index < FALLBACK_BASE_URLS.length - 1) {
+      if (shouldRetryFallback && index < FALLBACK_BASE_URLS.length - 1) {
         continue;
       }
 
       console.error(`Request to ${url} failed:`, error);
-      throw error;
+      const enhancedError = new Error(`Failed to fetch ${url}`);
+      enhancedError.status = error?.status || 0;
+      enhancedError.cause = error;
+      enhancedError.url = url;
+      throw enhancedError;
     }
   }
 
@@ -131,29 +136,50 @@ export const api = {
       return request(`/Product/Get/${id}`, { method: 'GET' });
     },
     create: async (productData) => {
+      const normalizedPrice = Number(productData.price);
+      const normalizedStock = Number(productData.stockQuantity);
+      const normalizedCategoryId = Number(productData.categoryId || 0);
+      const imageItems = (productData.items || productData.tables || productData.images || []).map((item, index) => ({
+        imageUrl: item.imageUrl || item.url || item,
+        mainPic: Boolean(item.mainPic ?? (index === 0)),
+        sortOrder: item.sortOrder ?? (index + 1),
+      }));
+
       return request('/Product/Create', {
         method: 'POST',
         body: {
           name: productData.name,
           description: productData.description || '',
-          price: productData.price,
-          stockQuantity: productData.stockQuantity,
-          categoryId: productData.categoryId,
-          tables: productData.tables || productData.images || []
+          price: Number.isFinite(normalizedPrice) ? normalizedPrice : 0,
+          stockQuantity: Number.isFinite(normalizedStock) ? normalizedStock : 0,
+          categoryId: Number.isFinite(normalizedCategoryId) ? normalizedCategoryId : 0,
+          items: imageItems,
         },
       });
     },
     update: async (productData) => {
+      const normalizedPrice = Number(productData.price);
+      const normalizedStock = Number(productData.stockQuantity);
+      const normalizedCategoryId = Number(productData.categoryId || 0);
+      const imageItems = (productData.items || productData.tables || productData.images || []).map((item, index) => ({
+        id: item.id || 0,
+        imageUrl: item.imageUrl || item.url || item,
+        mainPic: Boolean(item.mainPic ?? (index === 0)),
+        sortOrder: item.sortOrder ?? (index + 1),
+        productId: productData.id,
+      }));
+
       return request('/Product/Update', {
         method: 'PATCH',
         body: {
           id: productData.id,
           name: productData.name,
           description: productData.description || '',
-          price: productData.price,
-          stockQuantity: productData.stockQuantity,
-          categoryId: productData.categoryId,
-          tables: productData.tables || productData.images || []
+          price: Number.isFinite(normalizedPrice) ? normalizedPrice : 0,
+          stockQuantity: Number.isFinite(normalizedStock) ? normalizedStock : 0,
+          categoryId: Number.isFinite(normalizedCategoryId) ? normalizedCategoryId : 0,
+          supplierId: productData.supplierId || 0,
+          items: imageItems,
         },
       });
     },
@@ -164,44 +190,41 @@ export const api = {
 
   // --- Cart Endpoints ---
   cart: {
-    getList: async (filters = {}) => {
-      const queryParams = new URLSearchParams();
-      if (filters.id) queryParams.append('Id', filters.id);
-      
-      const queryString = queryParams.toString();
-      const endpoint = `/Cart/GetList${queryString ? `?${queryString}` : ''}`;
-      return request(endpoint, { method: 'GET' });
+    getList: async () => {
+      return request('/Cart/GetList', { method: 'GET' });
     },
     get: async (id) => {
       return request(`/Cart/Get/${id}`, { method: 'GET' });
     },
     create: async (cartData) => {
-      // CreateCartDlDto format: { userId, items: [ { productId, quantity } ] }
       const itemsList = cartData.items || cartData.tables || [];
+      const normalizedItems = itemsList.map(item => ({
+        productId: item.productId ?? item.id ?? 0,
+        quantity: Number(item.quantity ?? 1),
+      }));
+
       return request('/Cart/Create', {
         method: 'POST',
         body: {
-          userId: cartData.userId,
-          items: itemsList.map(item => ({
-            productId: item.productId,
-            quantity: item.quantity
-          }))
+          Items: normalizedItems,
         },
       });
     },
     update: async (cartData) => {
-      // UpdateCartDlDto format: { id, statusId, tables: [ { id, productId, quantity } ] }
       const itemsList = cartData.tables || cartData.items || [];
+      const normalizedItems = itemsList.map(item => ({
+        id: item.id || null,
+        productId: item.productId,
+        quantity: Number(item.quantity ?? 1),
+      }));
+
       return request('/Cart/Update', {
         method: 'PATCH',
+        retry: false,
         body: {
-          id: cartData.id,
-          statusId: cartData.statusId || 2, // 2 = MODIFIED
-          tables: itemsList.map(item => ({
-            id: item.id || null,
-            productId: item.productId,
-            quantity: item.quantity
-          }))
+          Id: cartData.id,
+          StatusId: cartData.statusId || 2,
+          Items: normalizedItems,
         },
       });
     },
@@ -216,7 +239,14 @@ export const api = {
       const queryParams = new URLSearchParams();
       const queryString = queryParams.toString();
       const endpoint = `/Order/GetList${queryString ? `?${queryString}` : ''}`;
-      return request(endpoint, { method: 'GET' });
+      try {
+        return await request(endpoint, { method: 'GET' });
+      } catch (error) {
+        if (error?.status === 401 || error?.status === 404 || error?.status === 405 || error?.status === 0) {
+          return [];
+        }
+        throw error;
+      }
     },
     get: async (id) => {
       return request(`/Order/Get/${id}`, { method: 'GET' });

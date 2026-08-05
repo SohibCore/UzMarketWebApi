@@ -20,6 +20,7 @@ namespace UzMarket.RepositoryLayer.DataBase
         public DbSet<Favorite> Favorites { get; set; }
         public DbSet<Payment> Payments { get; set; }
         public DbSet<Review> Reviews { get; set; }
+        public DbSet<PendingRegistration> PendingRegistrations { get; set; }
 
 
         public DbSet<DataProtectionKey> DataProtectionKeys { get; set; }

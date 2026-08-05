@@ -1,6 +1,6 @@
-using MediatR;
 using FluentValidation;
 using FluentValidation.AspNetCore;
+using MediatR;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.DataProtection;
@@ -10,6 +10,8 @@ using UzMarket.RepositoryLayer.DataBase;
 using UzMarket.ServiceLayer.MediatorServices.AddressServices.Commands;
 using UzMarket.ServiceLayer.Security.AccountServices;
 using UzMarket.ServiceLayer.Security.AuthServices;
+using UzMarket.ServiceLayer.Services.RegisterServices.Interfaces;
+using UzMarket.ServiceLayer.Services.RegisterServices.Services;
 using UzMarket.Validators.User;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -79,6 +81,14 @@ builder.Services.AddHttpContextAccessor();
 //Services
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAccountService, AccountService>();
+
+builder.Services.Configure<EmailSettings>(
+    builder.Configuration.GetSection("EmailSettings"));
+
+builder.Services.AddScoped<IEmailSender, MailKitEmailSender>();
+builder.Services.AddMemoryCache();
+builder.Services.AddScoped<ICacheService, MemoryCacheService>();
+builder.Services.AddScoped<IPasswordHasher, BCryptPasswordHasher>();
 
 //Mediatr
 builder.Services.AddMediatR(

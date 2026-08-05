@@ -33,7 +33,7 @@ namespace UzMarket.ServiceLayer.Security.AccountServices
         {
             get
             {
-                
+
                 if (_accessor.HttpContext != null &&
                     _accessor.HttpContext.User != null &&
                     _accessor.HttpContext.User.Identity != null)

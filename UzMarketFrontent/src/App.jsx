@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Navbar from './components/Navbar';
 import CartDrawer from './components/CartDrawer';
 import Home from './pages/Home';
@@ -25,6 +25,9 @@ export default function App() {
   const [activeCart, setActiveCart] = useState(null); // { id, tables: [...] }
   const [cartLoading, setCartLoading] = useState(false);
   const [cartDrawerOpen, setCartDrawerOpen] = useState(false);
+  const [isCartMutating, setIsCartMutating] = useState(false);
+  const cartInitPromiseRef = useRef(null);
+  const cartMutationPromiseRef = useRef(null);
 
   // 1. Check user auth session on mount
   useEffect(() => {
@@ -85,45 +88,66 @@ export default function App() {
 
   // Fetch or create user cart
   const loadUserCart = async (userId) => {
-    setCartLoading(true);
-    try {
-      const cartList = await api.cart.getList();
-      const userCartList = Array.isArray(cartList)
-        ? cartList.filter(c => c.userId === userId)
-        : [];
+    if (cartInitPromiseRef.current) {
+      return cartInitPromiseRef.current;
+    }
 
-      if (userCartList.length > 0) {
-        const fullCart = await api.cart.get(userCartList[0].id);
-        setActiveCart({
-          id: fullCart.id,
-          items: fullCart.items || fullCart.tables || []
-        });
-      } else {
-        const createRes = await api.cart.create({ userId, items: [] });
-        const cartId = typeof createRes === 'object' ? (createRes.id || createRes) : Number(createRes);
-        setActiveCart({
-          id: cartId,
-          items: []
-        });
-      }
-    } catch (err) {
-      if (err?.status !== 404 && err?.status !== 500) {
-        console.error("Error loading user cart:", err);
-      }
+    const pendingPromise = (async () => {
+      setCartLoading(true);
 
       try {
-        const createRes = await api.cart.create({ userId, items: [] });
-        const cartId = typeof createRes === 'object' ? (createRes.id || createRes) : Number(createRes);
-        setActiveCart({
-          id: cartId,
-          items: []
-        });
-      } catch (createErr) {
-        console.error("Error creating user cart:", createErr);
+        const cartList = await api.cart.getList({ id: userId });
+        const userCartList = Array.isArray(cartList)
+          ? cartList.filter(c => Number(c.userId) === Number(userId))
+          : [];
+
+        let cartData = null;
+
+        if (userCartList.length > 0) {
+          const fullCart = await api.cart.get(userCartList[0].id);
+          cartData = {
+            id: fullCart?.id ?? userCartList[0].id,
+            items: fullCart?.items || fullCart?.tables || []
+          };
+        } else {
+          const createRes = await api.cart.create({ userId, items: [] });
+          const cartId = typeof createRes === 'object' ? (createRes.id || createRes) : Number(createRes);
+          cartData = {
+            id: cartId,
+            items: []
+          };
+        }
+
+        setActiveCart(cartData);
+        return cartData;
+      } catch (err) {
+        if (err?.status !== 404 && err?.status !== 500) {
+          console.error("Error loading user cart:", err);
+        }
+
+        try {
+          const createRes = await api.cart.create({ userId, items: [] });
+          const cartId = typeof createRes === 'object' ? (createRes.id || createRes) : Number(createRes);
+          const cartData = {
+            id: cartId,
+            items: []
+          };
+
+          setActiveCart(cartData);
+          return cartData;
+        } catch (createErr) {
+          console.error("Error creating user cart:", createErr);
+          setActiveCart(null);
+          return null;
+        }
+      } finally {
+        setCartLoading(false);
+        cartInitPromiseRef.current = null;
       }
-    } finally {
-      setCartLoading(false);
-    }
+    })();
+
+    cartInitPromiseRef.current = pendingPromise;
+    return pendingPromise;
   };
 
   // Login Handler
@@ -158,52 +182,70 @@ export default function App() {
       return;
     }
 
-    if (!activeCart) {
-      alert("Savat yuklanmoqda, iltimos kuting...");
-      return;
+    if (cartMutationPromiseRef.current) {
+      return cartMutationPromiseRef.current;
     }
 
-    const currentItems = activeCart.items || activeCart.tables || [];
-    const updatedItems = [...currentItems];
-    const existingIndex = updatedItems.findIndex(item => item.productId === product.id);
-
-    if (existingIndex > -1) {
-      // Increment quantity
-      const newQty = (updatedItems[existingIndex].quantity || 1) + qty;
-      if (newQty > product.stockQuantity) {
-        alert(`Kechirasiz, omborda bor-yo'g'i ${product.stockQuantity} ta mahsulot mavjud.`);
-        return;
+    const pendingMutation = (async () => {
+      setIsCartMutating(true);
+      let cart = activeCart;
+      if (!cart) {
+        cart = await loadUserCart(currentUser.id);
       }
-      updatedItems[existingIndex] = {
-        ...updatedItems[existingIndex],
-        quantity: newQty
-      };
-    } else {
-      // Add new item
-      updatedItems.push({
-        productId: product.id,
-        quantity: qty
-      });
-    }
 
-    try {
-      await api.cart.update({
-        id: activeCart.id,
-        tables: updatedItems.map(t => ({
-          id: t.id || null,
-          productId: t.productId,
-          quantity: t.quantity
-        }))
-      });
+      if (!cart) {
+        alert("Savatni yaratib bo‘lmadi. Iltimos, qayta urinib ko‘ring.");
+        return null;
+      }
 
-      setActiveCart({
-        id: activeCart.id,
-        items: updatedItems
-      });
-      setCartDrawerOpen(true); // Open drawer to show success
-    } catch (err) {
-      alert("Savatni yangilashda xatolik yuz berdi: " + err.message);
-    }
+      const currentItems = cart.items || cart.tables || [];
+      const updatedItems = [...currentItems];
+      const existingIndex = updatedItems.findIndex(item => item.productId === product.id);
+
+      if (existingIndex > -1) {
+        const newQty = (updatedItems[existingIndex].quantity || 1) + qty;
+        if (newQty > product.stockQuantity) {
+          alert(`Kechirasiz, omborda bor-yo'g'i ${product.stockQuantity} ta mahsulot mavjud.`);
+          return null;
+        }
+        updatedItems[existingIndex] = {
+          ...updatedItems[existingIndex],
+          quantity: newQty
+        };
+      } else {
+        updatedItems.push({
+          productId: product.id,
+          quantity: qty
+        });
+      }
+
+      try {
+        await api.cart.update({
+          id: cart.id,
+          items: updatedItems.map(t => ({
+            id: t.id || null,
+            productId: t.productId,
+            quantity: t.quantity
+          }))
+        });
+
+        setActiveCart({
+          id: cart.id,
+          items: updatedItems
+        });
+        setCartDrawerOpen(true);
+        return updatedItems;
+      } catch (err) {
+        alert("Savatni yangilashda xatolik yuz berdi: " + err.message);
+        return null;
+      } finally {
+        cartMutationPromiseRef.current = null;
+        setIsCartMutating(false);
+      }
+    })();
+
+    cartMutationPromiseRef.current = pendingMutation;
+    return pendingMutation;
   };
 
   // Update Item Quantity in Cart Drawer

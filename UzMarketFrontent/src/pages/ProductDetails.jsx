@@ -17,9 +17,9 @@ export default function ProductDetails({ productId, onAddToCart, onBack }) {
         setProduct(data);
         
         // Set active image
-        const prodTables = data.tables || data.images || [];
-        if (prodTables.length > 0) {
-          const mainPicObj = prodTables.find(t => t.mainPic) || prodTables[0];
+        const imageSources = (data.tables || data.images || data.items || []).filter(Boolean);
+        if (imageSources.length > 0) {
+          const mainPicObj = imageSources.find((item) => item.mainPic) || imageSources[0];
           setActiveImage(mainPicObj.imageUrl || mainPicObj.url || mainPicObj);
         } else {
           setActiveImage('https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&auto=format&fit=crop&q=60');
@@ -125,14 +125,14 @@ export default function ProductDetails({ productId, onAddToCart, onBack }) {
           </div>
 
           {/* Thumbnails list */}
-          {(product.tables || product.images) && (product.tables || product.images).length > 1 && (
+          {(product.tables || product.images || product.items) && (product.tables || product.images || product.items).length > 1 && (
             <div style={{
               display: 'flex',
               gap: '12px',
               overflowX: 'auto',
               paddingBottom: '8px'
             }}>
-              {(product.tables || product.images).map((img, idx) => {
+              {(product.tables || product.images || product.items).map((img, idx) => {
                 const imgUrl = img.imageUrl || img.url || img;
                 return (
                   <div 

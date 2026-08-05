@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using UzMarket.RepositoryLayer.DataBase;
@@ -11,9 +12,11 @@ using UzMarket.RepositoryLayer.DataBase;
 namespace UzMarket.RepositoryLayer.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260805060247_AddPendingRegistration")]
+    partial class AddPendingRegistration
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -445,11 +448,6 @@ namespace UzMarket.RepositoryLayer.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
-                    b.Property<string>("Address")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("ADDRESS");
-
                     b.Property<int>("AttemptCount")
                         .HasColumnType("integer")
                         .HasColumnName("ATTEMPT_COUNT");
@@ -458,11 +456,6 @@ namespace UzMarket.RepositoryLayer.Migrations
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("CODE");
-
-                    b.Property<string>("DateOfBirth")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("DATE_OF_BIRTH");
 
                     b.Property<string>("Email")
                         .IsRequired()
@@ -478,35 +471,10 @@ namespace UzMarket.RepositoryLayer.Migrations
                         .HasColumnType("text")
                         .HasColumnName("FULL_NAME");
 
-                    b.Property<string>("PassportSeries")
+                    b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("text")
-                        .HasColumnName("PASSPORT_SERIES");
-
-                    b.Property<string>("Password")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("PASSWORD");
-
-                    b.Property<string>("PhoneNumber")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("PHONE_NUMBER");
-
-                    b.Property<string>("Pinfl")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("PINFL");
-
-                    b.Property<string>("ShortName")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("SHORT_NAME");
-
-                    b.Property<string>("UserName")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("USER_NAME");
+                        .HasColumnName("PASSWORD_HASH");
 
                     b.HasKey("Id");
 
@@ -713,10 +681,6 @@ namespace UzMarket.RepositoryLayer.Migrations
                         .HasMaxLength(300)
                         .HasColumnType("character varying(300)")
                         .HasColumnName("PASSWORD");
-
-                    b.Property<bool>("IsEmailConfirmed")
-                        .HasColumnType("boolean")
-                        .HasColumnName("IS_EMAIL_CONFIRMED");
 
                     b.Property<DateTime?>("ModifiedAt")
                         .HasColumnType("timestamp without time zone")

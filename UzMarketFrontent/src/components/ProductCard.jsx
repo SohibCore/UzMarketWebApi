@@ -1,10 +1,9 @@
 import React from 'react';
 
 export default function ProductCard({ product, onAddToCart, onSelect }) {
-  // Find main pic or fallback
-  const prodTables = product.tables || product.images || [];
-  const mainImage = prodTables.length > 0
-    ? prodTables.find(t => t.mainPic)?.imageUrl || prodTables[0].imageUrl || prodTables[0]
+  const imageSources = (product.tables || product.images || product.items || []).filter(Boolean);
+  const mainImage = imageSources.length > 0
+    ? (imageSources.find((item) => item.mainPic)?.imageUrl || imageSources.find((item) => item.imageUrl)?.imageUrl || imageSources.find((item) => item.url)?.url || imageSources[0]?.imageUrl || imageSources[0]?.url || imageSources[0])
     : 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&auto=format&fit=crop&q=60';
 
   const inStock = product.stockQuantity > 0;

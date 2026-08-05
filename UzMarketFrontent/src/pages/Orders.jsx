@@ -10,7 +10,7 @@ export default function Orders({
 }) {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [statusMessage, setStatusMessage] = useState({ type: 'info', text: '' });
   
   // Checkout Form States
   const [addressForm, setAddressForm] = useState({
@@ -27,21 +27,34 @@ export default function Orders({
     async function loadOrders() {
       if (viewType !== 'history') return;
       setLoading(true);
-      setError('');
+      setStatusMessage({ type: 'info', text: '' });
       try {
         const data = await api.orders.getList();
-        // The API returns an array, sort by ID descending (newest first)
-        if (Array.isArray(data)) {
-          setOrders(data.sort((a, b) => b.id - a.id));
-        } else {
-          setOrders([]);
-        }
+        const normalizedOrders = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.items)
+            ? data.items
+            : Array.isArray(data?.tables)
+              ? data.tables
+              : Array.isArray(data?.data)
+                ? data.data
+                : [];
+
+        const sortedOrders = [...normalizedOrders].sort((a, b) => (b.id ?? 0) - (a.id ?? 0));
+        setOrders(sortedOrders);
+        setStatusMessage({
+          type: 'info',
+          text: sortedOrders.length > 0 ? '' : 'Hozircha buyurtmalar mavjud emas.'
+        });
       } catch (err) {
-        // If 404, might mean no orders found, which is fine
-        if (err.status === 404) {
-          setOrders([]);
+        setOrders([]);
+        const status = err?.status;
+        if (status === 401) {
+          setStatusMessage({ type: 'error', text: 'Buyurtmalar ro‘yxatini ko‘rish uchun tizimga qayta kirish kerak.' });
+        } else if (status === 404 || status === 405) {
+          setStatusMessage({ type: 'info', text: 'Buyurtmalar hozircha mavjud emas yoki xizmat vaqtincha band.' });
         } else {
-          setError('Buyurtmalarni yuklashda xatolik: ' + err.message);
+          setStatusMessage({ type: 'error', text: 'Buyurtmalarni yuklashda vaqtinchalik muammo yuz berdi.' });
         }
       } finally {
         setLoading(false);
@@ -59,7 +72,7 @@ export default function Orders({
     }
 
     setSubmitting(true);
-    setError('');
+    setStatusMessage({ type: 'info', text: '' });
 
     try {
       const createdAddressId = await api.addresses.create({
@@ -87,10 +100,10 @@ export default function Orders({
       };
 
       await api.orders.create(orderDto);
-      alert('Buyurtmangiz muvaffaqiyatli qabul qilindi!');
+      setStatusMessage({ type: 'success', text: 'Buyurtmangiz muvaffaqiyatli qabul qilindi.' });
       onOrderPlaced();
     } catch (err) {
-      alert('Buyurtma berishda xatolik yuz berdi: ' + err.message);
+      setStatusMessage({ type: 'error', text: 'Buyurtma berishda xatolik yuz berdi.' });
     } finally {
       setSubmitting(false);
     }
@@ -255,111 +268,131 @@ export default function Orders({
 
   // --- ORDER HISTORY VIEW ---
   return (
-    <div style={{ padding: '0 16px 48px 16px', maxWidth: '900px', margin: '0 auto' }} className="fade-in">
-      <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 800, marginBottom: '24px' }}>
-        Mening Buyurtmalarim
-      </h1>
+    <div style={{ padding: '0 16px 48px 16px', maxWidth: '980px', margin: '0 auto' }} className="fade-in">
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        textAlign: 'center',
+        marginBottom: '32px',
+        gap: '12px'
+      }}>
+        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 800, margin: 0 }}>
+          Mening Buyurtmalarim
+        </h1>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0, maxWidth: '720px' }}>
+          Faol buyurtmalar va oldingi xaridlaringiz bu yerda ko‘rinadi.
+        </p>
+      </div>
 
-      {error && (
+      {statusMessage.text && (
         <div style={{
           padding: '12px 16px',
-          backgroundColor: 'var(--accent-rose-glow)',
-          color: '#ff7675',
+          backgroundColor: statusMessage.type === 'error' ? 'var(--accent-rose-glow)' : 'rgba(0, 210, 211, 0.15)',
+          color: statusMessage.type === 'error' ? '#ff7675' : 'var(--accent-teal)',
           borderRadius: 'var(--border-radius-sm)',
-          border: '1px solid var(--accent-rose)',
-          marginBottom: '24px'
+          border: `1px solid ${statusMessage.type === 'error' ? 'var(--accent-rose)' : 'var(--accent-teal)'}`,
+          marginBottom: '24px',
+          textAlign: 'center'
         }}>
-          {error}
+          {statusMessage.text}
         </div>
       )}
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '48px' }}>Yuklanmoqda...</div>
+        <div className="glass-panel" style={{ padding: '48px', textAlign: 'center', color: 'var(--text-muted)' }}>
+          Yuklanmoqda...
+        </div>
       ) : orders.length === 0 ? (
         <div className="glass-panel" style={{ padding: '64px 24px', textAlign: 'center', color: 'var(--text-muted)' }}>
           <svg style={{ width: '48px', height: '48px', opacity: 0.3, marginBottom: '16px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
           </svg>
           <p style={{ fontSize: '1.1rem', fontWeight: 500, marginBottom: '16px' }}>Sizda hali buyurtmalar mavjud emas.</p>
-          <button onClick={() => onNavigate('home')} className="glow-btn">Xaridlarni Boshlash</button>
+          <button onClick={() => onNavigate('home')} className="glow-btn">Xaridlarni boshlash</button>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {orders.map((ord) => (
-            <div 
-              key={ord.id} 
-              className="glass-panel" 
-              style={{
-                padding: '24px',
-                border: '1px solid var(--border-color)',
-                backgroundColor: 'var(--bg-secondary)'
-              }}
-            >
-              {/* Order Header info */}
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                borderBottom: '1px solid var(--border-color)',
-                paddingBottom: '16px',
-                marginBottom: '16px',
-                flexWrap: 'wrap',
-                gap: '12px'
-              }}>
-                <div>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block' }}>BUYURTMA ID</span>
-                  <span style={{ fontWeight: 700, fontSize: '1rem' }}>#UZM-{ord.id}</span>
+          {orders.map((ord) => {
+            const totalAmount = Number(ord.totalAmount ?? ord.total ?? ord.amount ?? 0);
+            const orderDate = ord.orderDate || ord.createdAt || 'Bugun';
+            const orderStatus = ord.orderStatusId === 1
+              ? { label: 'Kutilmoqda', color: 'badge-primary' }
+              : ord.orderStatusId === 2
+                ? { label: 'Yetkazildi', color: 'badge-success' }
+                : { label: 'Bajarilmoqda', color: 'badge-primary' };
+
+            return (
+              <div
+                key={ord.id}
+                className="glass-panel"
+                style={{
+                  padding: '24px',
+                  border: '1px solid var(--border-color)',
+                  backgroundColor: 'var(--bg-secondary)',
+                  borderRadius: '20px'
+                }}
+              >
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  borderBottom: '1px solid var(--border-color)',
+                  paddingBottom: '16px',
+                  marginBottom: '16px',
+                  flexWrap: 'wrap',
+                  gap: '12px'
+                }}>
+                  <div>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block' }}>BUYURTMA ID</span>
+                    <span style={{ fontWeight: 700, fontSize: '1rem' }}>#UZM-{ord.id}</span>
+                  </div>
+
+                  <div>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block' }}>SANA</span>
+                    <span style={{ fontWeight: 600 }}>{orderDate}</span>
+                  </div>
+
+                  <div>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block' }}>HOLAT</span>
+                    <span className={`badge ${orderStatus.color}`}>{orderStatus.label}</span>
+                  </div>
+
+                  <div>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block' }}>JAMI SUMMA</span>
+                    <span style={{ fontWeight: 800, color: 'var(--accent-teal)', fontSize: '1.1rem' }}>
+                      {totalAmount.toLocaleString('uz-UZ')} UZS
+                    </span>
+                  </div>
                 </div>
 
-                <div>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block' }}>SANA</span>
-                  <span style={{ fontWeight: 600 }}>{ord.orderDate || 'Bugun'}</span>
-                </div>
-
-                <div>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block' }}>HOLAT</span>
-                  {ord.orderStatusId === 1 ? (
-                    <span className="badge badge-primary">Kutilmoqda</span>
-                  ) : ord.orderStatusId === 2 ? (
-                    <span className="badge badge-success">Yetkazildi</span>
-                  ) : (
-                    <span className="badge badge-primary">Bajarilmoqda</span>
-                  )}
-                </div>
-
-                <div>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block' }}>JAMI SUMMA</span>
-                  <span style={{ fontWeight: 800, color: 'var(--accent-teal)', fontSize: '1.1rem' }}>
-                    {ord.totalAmount.toLocaleString('uz-UZ')} UZS
-                  </span>
-                </div>
+                {((ord.items && ord.items.length > 0) || (ord.tables && ord.tables.length > 0)) ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {(ord.items || ord.tables).map((item, idx) => {
+                      const prod = products.find(p => p.id === item.productId);
+                      const quantity = Number(item.quantity ?? 1);
+                      const itemPrice = Number(item.price ?? (prod ? prod.price : 0));
+                      return (
+                        <div key={item.id || idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.88rem' }}>
+                          <span style={{ color: 'var(--text-muted)' }}>
+                            {prod ? prod.name : `Mahsulot #${item.productId}`} <strong style={{ color: 'var(--text-main)' }}>x{quantity}</strong>
+                          </span>
+                          <span style={{ fontWeight: 600 }}>
+                            {(itemPrice * quantity).toLocaleString('uz-UZ')} UZS
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                    Mahsulot tafsilotlari mavjud emas.
+                  </div>
+                )}
               </div>
-
-              {/* Order Items list inside order */}
-              {((ord.items && ord.items.length > 0) || (ord.tables && ord.tables.length > 0)) ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {(ord.items || ord.tables).map((item, idx) => {
-                    const prod = products.find(p => p.id === item.productId);
-                    const itemPrice = item.price || (prod ? prod.price : 0);
-                    return (
-                      <div key={item.id || idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.88rem' }}>
-                        <span style={{ color: 'var(--text-muted)' }}>
-                          {prod ? prod.name : `Mahsulot #${item.productId}`} <strong style={{ color: 'var(--text-main)' }}>x{item.quantity}</strong>
-                        </span>
-                        <span style={{ fontWeight: 600 }}>
-                          {(itemPrice * item.quantity).toLocaleString('uz-UZ')} UZS
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                  Mahsulot tafsilotlari yuklanmadi.
-                </div>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

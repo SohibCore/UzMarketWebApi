@@ -19,9 +19,6 @@ namespace UzMarket.Validators.Category
                 .MinimumLength(3).WithMessage("The Description must be at least 3 character.")
                 .MaximumLength(500).WithMessage("The Description must not exceed 500 characters.")
                 .Must(x => !string.IsNullOrWhiteSpace(x)).WithMessage("The Description cannot be empty.");
-
-            RuleFor(x => x.ParentCategoryId)
-                .GreaterThan(0).WithMessage("The Main Category field must be a valid category.");
         }
     }
 }

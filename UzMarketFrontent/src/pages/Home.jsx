@@ -3,13 +3,38 @@ import ProductCard from '../components/ProductCard';
 import { api } from '../services/api';
 
 const FALLBACK_CATEGORIES = [
-  { id: 0, name: 'Barchasi', icon: '🛍️' },
-  { id: 1, name: 'Smartfonlar va Gadjetlar', icon: '📱' },
-  { id: 2, name: 'Kompyuter Texnikasi', icon: '💻' },
-  { id: 3, name: 'Maishiy Texnika', icon: '📺' },
-  { id: 4, name: 'Kiyim va Poyabzallar', icon: '👕' },
-  { id: 5, name: 'Kitoblar va Kanselyariya', icon: '📚' }
+  { id: 0, name: 'Barchasi', icon: '🛍️', parentId: 0 },
+  { id: 1, name: 'Elektronika', icon: '📱', parentId: 0 },
+  { id: 2, name: 'Smartfonlar', icon: '📱', parentId: 1 },
+  { id: 3, name: 'Noutbuklar', icon: '💻', parentId: 1 },
+  { id: 4, name: 'Televizorlar', icon: '📺', parentId: 1 },
+  { id: 5, name: 'Kompyuter Texnikasi', icon: '💻', parentId: 0 },
+  { id: 6, name: 'Maishiy Texnika', icon: '📺', parentId: 0 },
+  { id: 7, name: 'Kiyim va Poyabzallar', icon: '👕', parentId: 0 },
+  { id: 8, name: 'Kitoblar va Kanselyariya', icon: '📚', parentId: 0 }
 ];
+
+const normalizeCategories = (rawCategories = []) => {
+  const source = Array.isArray(rawCategories) && rawCategories.length ? rawCategories : FALLBACK_CATEGORIES;
+
+  const normalized = source.map((cat, index) => ({
+    id: cat.id ?? cat.categoryId ?? index + 1,
+    name: cat.name ?? cat.title ?? 'Kategoriya',
+    icon: cat.icon ?? '🛍️',
+    parentId: cat.parentId ?? cat.parentCategoryId ?? cat.ParentId ?? 0,
+    children: []
+  }));
+
+  const byId = new Map(normalized.map((cat) => [cat.id, cat]));
+  normalized.forEach((cat) => {
+    const parentId = Number(cat.parentId || 0);
+    if (parentId && byId.has(parentId)) {
+      byId.get(parentId).children.push(cat);
+    }
+  });
+
+  return normalized;
+};
 
 export default function Home({ 
   products, 
@@ -21,6 +46,20 @@ export default function Home({
   const [selectedCategory, setSelectedCategory] = useState(0);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [categories, setCategories] = useState(FALLBACK_CATEGORIES);
+  const [categoryQuery, setCategoryQuery] = useState('');
+
+  const topLevelCategories = categories.filter((cat) => !cat.parentId || Number(cat.parentId) === 0);
+  const selectedCategoryData = categories.find((cat) => cat.id === selectedCategory) || null;
+  const selectedParentCategory = selectedCategoryData?.parentId && Number(selectedCategoryData.parentId) !== 0
+    ? categories.find((cat) => cat.id === Number(selectedCategoryData.parentId)) || null
+    : selectedCategoryData;
+  const visibleSubCategories = selectedParentCategory?.children?.filter((child) =>
+    child.name.toLowerCase().includes(categoryQuery.toLowerCase())
+  ) || [];
+
+  const handleCategorySelect = (categoryId) => {
+    setSelectedCategory((current) => (current === categoryId ? 0 : categoryId));
+  };
 
   useEffect(() => {
     async function loadCategories() {
@@ -33,17 +72,13 @@ export default function Home({
             : [];
 
         if (normalized.length > 0) {
-          setCategories(
-            normalized.map((cat) => ({
-              id: cat.id ?? cat.categoryId ?? 0,
-              name: cat.name ?? cat.title ?? 'Kategoriya',
-              icon: cat.icon ?? '🛍️'
-            }))
-          );
+          setCategories(normalizeCategories(normalized));
+        } else {
+          setCategories(normalizeCategories(FALLBACK_CATEGORIES));
         }
       } catch (error) {
         console.warn('Kategoriyalarni yuklashda xatolik, fallback ishlatilmoqda:', error);
-        setCategories(FALLBACK_CATEGORIES);
+        setCategories(normalizeCategories(FALLBACK_CATEGORIES));
       }
     }
 
@@ -53,9 +88,20 @@ export default function Home({
   useEffect(() => {
     let result = products;
 
-    // Filter by category
     if (selectedCategory > 0) {
-      result = result.filter(p => p.categoryId === selectedCategory);
+      const selectedIds = new Set();
+      const selectedData = categories.find((cat) => cat.id === selectedCategory);
+
+      if (selectedData) {
+        if (selectedData.parentId && Number(selectedData.parentId) !== 0) {
+          selectedIds.add(selectedData.id);
+        } else {
+          selectedIds.add(selectedData.id);
+          selectedData.children.forEach((child) => selectedIds.add(child.id));
+        }
+      }
+
+      result = result.filter((p) => selectedIds.has(p.categoryId));
     }
 
     // Filter by search query
@@ -68,7 +114,7 @@ export default function Home({
     }
 
     setFilteredProducts(result);
-  }, [products, selectedCategory, searchQuery]);
+  }, [products, selectedCategory, searchQuery, categories]);
 
   return (
     <div style={{ padding: '0 16px' }} className="fade-in">
@@ -76,49 +122,52 @@ export default function Home({
       <div 
         className="glass-panel" 
         style={{
-          padding: '48px',
+          padding: '36px 40px',
           marginBottom: '32px',
-          background: 'linear-gradient(135deg, rgba(95, 39, 205, 0.45) 0%, rgba(255, 63, 108, 0.15) 100%)',
-          borderRadius: 'var(--border-radius-lg)',
+          background: 'linear-gradient(135deg, rgba(95, 39, 205, 0.5) 0%, rgba(255, 63, 108, 0.18) 60%, rgba(0, 210, 211, 0.12) 100%)',
+          borderRadius: '24px',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'flex-start',
-          gap: '16px',
+          gap: '14px',
           position: 'relative',
-          overflow: 'hidden'
+          overflow: 'hidden',
+          boxShadow: '0 20px 60px rgba(95, 39, 205, 0.16)'
         }}
       >
         <div style={{
           position: 'absolute',
           top: '-20%',
           right: '-10%',
-          width: '300px',
-          height: '300px',
+          width: '320px',
+          height: '320px',
           borderRadius: '50%',
           background: 'var(--accent-teal)',
-          opacity: 0.15,
-          filter: 'blur(80px)'
+          opacity: 0.16,
+          filter: 'blur(90px)'
         }} />
 
-        <span className="badge badge-primary" style={{ padding: '6px 12px' }}>Yozgi chegirmalar!</span>
+        <span className="badge badge-primary" style={{ padding: '6px 12px', fontSize: '0.85rem' }}>Yozgi chegirmalar!</span>
         
         <h1 style={{
           fontFamily: 'var(--font-display)',
-          fontSize: '2.8rem',
+          fontSize: '2.4rem',
           fontWeight: 800,
           lineHeight: '1.2',
-          maxWidth: '600px'
+          maxWidth: '620px',
+          margin: 0
         }}>
-          Milliy Bozordagi <span className="text-gradient">Eng Sifatli</span> Mahsulotlar
+          Tezkor yetkazib berish va <span className="text-gradient">arzon narxlar</span> bilan xarid qiling
         </h1>
         
         <p style={{
           color: 'var(--text-muted)',
-          maxWidth: '500px',
+          maxWidth: '560px',
           fontSize: '1rem',
-          lineHeight: '1.6'
+          lineHeight: '1.6',
+          margin: 0
         }}>
-          UzMarket do'konida qulay to'lovlar, tezkor yetkazib berish xizmati va doimiy kafolat mavjud. Bugunoq o'z xaridingizni amalga oshiring!
+          UzMarket do‘konida eng yaxshi mahsulotlar, kafolat va qulay to‘lovlar bir joyda.
         </p>
 
         <button 
@@ -127,7 +176,7 @@ export default function Home({
             if (el) el.scrollIntoView({ behavior: 'smooth' });
           }}
           className="glow-btn" 
-          style={{ marginTop: '8px' }}
+          style={{ marginTop: '6px' }}
         >
           Xaridni boshlash
         </button>
@@ -135,49 +184,181 @@ export default function Home({
 
       {/* Category Navigation Section */}
       <div style={{ marginBottom: '32px' }}>
-        <h2 style={{
-          fontFamily: 'var(--font-display)',
-          fontSize: '1.5rem',
-          fontWeight: 700,
-          marginBottom: '16px'
-        }}>
-          Kategoriyalar bo'yicha ko'rish
-        </h2>
-        
         <div style={{
           display: 'flex',
-          gap: '12px',
-          overflowX: 'auto',
-          paddingBottom: '8px',
-          scrollbarWidth: 'none' // Hide default scrollbar
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '16px',
+          marginBottom: '18px',
+          flexWrap: 'wrap'
         }}>
-          {categories.map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => setSelectedCategory(cat.id)}
-              className="sec-btn"
-              style={{
-                padding: '10px 20px',
-                borderRadius: 'var(--border-radius-lg)',
-                whiteSpace: 'nowrap',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                border: selectedCategory === cat.id 
-                  ? '1px solid var(--accent-indigo)' 
-                  : '1px solid var(--border-color)',
-                background: selectedCategory === cat.id 
-                  ? 'var(--accent-indigo-glow)' 
-                  : 'var(--bg-secondary)',
-                boxShadow: selectedCategory === cat.id
-                  ? '0 4px 12px rgba(95, 39, 205, 0.2)'
-                  : 'none'
-              }}
-            >
-              <span>{cat.icon}</span>
-              <span style={{ fontWeight: selectedCategory === cat.id ? 600 : 400 }}>{cat.name}</span>
-            </button>
-          ))}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <h2 style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: '1.35rem',
+              fontWeight: 700,
+              margin: 0,
+              color: 'white'
+            }}>
+              Kategoriyalar
+            </h2>
+          </div>
+
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '8px 12px',
+            borderRadius: '999px',
+            border: '1px solid rgba(255,255,255,0.08)',
+            background: 'rgba(255,255,255,0.04)',
+            minWidth: '280px',
+            maxWidth: '360px',
+            flex: 1
+          }}>
+            <svg style={{ width: '18px', height: '18px', color: 'var(--text-muted)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-4.35-4.35m1.85-5.15a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input
+              type="text"
+              value={categoryQuery}
+              onChange={(e) => setCategoryQuery(e.target.value)}
+              placeholder="Kategoriya qidiring"
+              className="form-input"
+              style={{ border: 'none', background: 'transparent', boxShadow: 'none', padding: 0, minWidth: 0 }}
+            />
+          </div>
+        </div>
+
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '10px',
+          alignItems: 'flex-start'
+        }}>
+          <div style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: '10px',
+            justifyContent: 'flex-start'
+          }}>
+            {topLevelCategories
+              .filter((cat) => cat.name.toLowerCase().includes(categoryQuery.toLowerCase()))
+              .map((cat) => {
+                const isActive = selectedCategory === cat.id;
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => handleCategorySelect(cat.id)}
+                    className="sec-btn"
+                    style={{
+                      padding: '10px 12px',
+                      borderRadius: '999px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      border: isActive
+                        ? '1px solid var(--accent-indigo)'
+                        : '1px solid rgba(255,255,255,0.08)',
+                      background: isActive
+                        ? 'linear-gradient(135deg, rgba(95, 39, 205, 0.22), rgba(0, 210, 211, 0.12))'
+                        : 'rgba(255,255,255,0.04)',
+                      boxShadow: isActive ? '0 10px 30px rgba(95, 39, 205, 0.18)' : 'none',
+                      textAlign: 'left',
+                      color: 'white'
+                    }}
+                  >
+                    <span style={{ fontSize: '1rem' }}>{cat.icon}</span>
+                    <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{cat.name}</span>
+                    {isActive && (
+                      <span
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedCategory(0);
+                        }}
+                        style={{
+                          marginLeft: '4px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          width: '18px',
+                          height: '18px',
+                          borderRadius: '50%',
+                          background: 'rgba(255,255,255,0.14)',
+                          color: 'white',
+                          fontSize: '0.85rem',
+                          lineHeight: 1
+                        }}
+                        aria-label={`Clear ${cat.name}`}
+                      >
+                        ×
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+          </div>
+
+          {visibleSubCategories.length > 0 && (
+            <div style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '8px',
+              justifyContent: 'flex-start'
+            }}>
+              {visibleSubCategories.map((child) => {
+                const isActive = selectedCategory === child.id;
+                return (
+                  <button
+                    key={child.id}
+                    onClick={() => handleCategorySelect(child.id)}
+                    style={{
+                      padding: '8px 10px',
+                      borderRadius: '999px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      border: isActive
+                        ? '1px solid var(--accent-indigo)'
+                        : '1px solid rgba(255,255,255,0.08)',
+                      background: isActive
+                        ? 'linear-gradient(135deg, rgba(95, 39, 205, 0.22), rgba(0, 210, 211, 0.12))'
+                        : 'rgba(255,255,255,0.03)',
+                      color: 'white',
+                      fontSize: '0.86rem'
+                    }}
+                  >
+                    <span>{child.icon}</span>
+                    <span>{child.name}</span>
+                    {isActive && (
+                      <span
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedCategory(0);
+                        }}
+                        style={{
+                          marginLeft: '4px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          width: '16px',
+                          height: '16px',
+                          borderRadius: '50%',
+                          background: 'rgba(255,255,255,0.14)',
+                          color: 'white',
+                          fontSize: '0.8rem',
+                          lineHeight: 1
+                        }}
+                        aria-label={`Clear ${child.name}`}
+                      >
+                        ×
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 
@@ -267,6 +448,15 @@ export default function Home({
       <style>{`
         @keyframes spin {
           to { transform: rotate(360deg); }
+        }
+
+        @keyframes pulseGlow {
+          0%, 100% {
+            box-shadow: 0 0 0 rgba(99, 102, 241, 0.12), 0 0 0 1px rgba(99, 102, 241, 0.2);
+          }
+          50% {
+            box-shadow: 0 0 18px rgba(37, 99, 235, 0.34), 0 0 0 1px rgba(129, 140, 248, 0.72);
+          }
         }
       `}</style>
     </div>

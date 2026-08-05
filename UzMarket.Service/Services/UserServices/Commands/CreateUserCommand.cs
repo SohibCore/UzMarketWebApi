@@ -4,7 +4,6 @@ using Microsoft.EntityFrameworkCore;
 using UzMarket.RepositoryLayer.Entity;
 using UzMarket.RepositoryLayer.DataBase;
 using UzMarket.RepositoryLayer.Dtos.UserDtos;
-using UzMarket.ServiceLayer.Security.AccountServices;
 
 namespace UzMarket.ServiceLayer.MediatorServices.UserServices.Commands
 {

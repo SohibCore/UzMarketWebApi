@@ -7,13 +7,15 @@ export default function AdminPanel({ products, onRefreshProducts }) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ text: '', isError: false });
   const [categories, setCategories] = useState([]);
+  const [categorySearch, setCategorySearch] = useState('');
+  const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
 
   // Form Fields State
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    price: 0,
-    stockQuantity: 0,
+    price: '',
+    stockQuantity: '',
     categoryId: 0,
     imageUrl: '',
     imageUrls: [],
@@ -56,34 +58,119 @@ export default function AdminPanel({ products, onRefreshProducts }) {
     loadCategories();
   }, []);
 
+  const sanitizeNumericValue = (value) => value.replace(/\D/g, '');
+
+  const readImageAsDataUrl = (file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      const sourceDataUrl = reader.result;
+      if (typeof sourceDataUrl !== 'string' || !sourceDataUrl.startsWith('data:image')) {
+        reject(new Error('Rasmni o‘qib bo‘lmadi.'));
+        return;
+      }
+
+      const img = new Image();
+      img.onload = () => {
+        const maxDimension = 1400;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height && width > maxDimension) {
+          height = Math.round((height * maxDimension) / width);
+          width = maxDimension;
+        } else if (height > maxDimension) {
+          width = Math.round((width * maxDimension) / height);
+          height = maxDimension;
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const mimeType = file.type.includes('png') ? 'image/png' : 'image/jpeg';
+        const quality = mimeType === 'image/png' ? 1 : 0.78;
+        resolve(canvas.toDataURL(mimeType, quality));
+      };
+
+      img.onerror = () => reject(new Error('Rasmni qayta ishlashda xatolik yuz berdi.'));
+      img.src = sourceDataUrl;
+    };
+
+    reader.onerror = () => reject(new Error('Rasmni o‘qib bo‘lmadi.'));
+    reader.readAsDataURL(file);
+  });
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+
+    if (name === 'price' || name === 'stockQuantity') {
+      setFormData(prev => ({
+        ...prev,
+        [name]: sanitizeNumericValue(value)
+      }));
+      return;
+    }
+
+    if (name === 'categoryId') {
+      setFormData(prev => ({
+        ...prev,
+        [name]: Number(value)
+      }));
+      return;
+    }
+
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'price' || name === 'stockQuantity' || name === 'categoryId'
-        ? Number(value)
-        : value
+      [name]: value
     }));
+  };
+
+  const handleCategorySearchChange = (e) => {
+    const value = e.target.value;
+    setCategorySearch(value);
+    setCategoryDropdownOpen(true);
+
+    if (!value) {
+      const selected = categories.find((cat) => cat.id === formData.categoryId);
+      setFormData((prev) => ({ ...prev, categoryId: selected?.id ?? 0 }));
+    }
+  };
+
+  const handleCategorySelect = (catId) => {
+    setFormData((prev) => ({ ...prev, categoryId: catId }));
+    setCategorySearch(categories.find((cat) => cat.id === catId)?.name || '');
+    setCategoryDropdownOpen(false);
   };
 
   const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
 
-    const fileReaders = files.map((file) => new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result || '');
-      reader.readAsDataURL(file);
-    }));
+    if (files.length > 8) {
+      setMessage({ text: 'Maksimal 8 ta rasm yuklash mumkin.', isError: true });
+      e.target.value = '';
+      return;
+    }
 
-    const results = (await Promise.all(fileReaders)).filter(Boolean);
-    if (!results.length) return;
+    try {
+      const results = (await Promise.all(files.map((file) => readImageAsDataUrl(file)))).filter(Boolean);
+      if (!results.length) return;
 
-    setFormData(prev => ({
-      ...prev,
-      imageUrls: [...prev.imageUrls, ...results],
-      imageUrl: results[0] || prev.imageUrl,
-    }));
+      setFormData(prev => ({
+        ...prev,
+        imageUrls: [...prev.imageUrls, ...results],
+        imageUrl: results[0] || prev.imageUrl,
+      }));
+      setMessage({ text: `${results.length} ta rasm yuklandi.`, isError: false });
+    } catch (error) {
+      setMessage({ text: error.message || 'Rasm yuklashda xatolik yuz berdi.', isError: true });
+    } finally {
+      e.target.value = '';
+    }
   };
 
   const handleOpenAddForm = () => {
@@ -91,36 +178,40 @@ export default function AdminPanel({ products, onRefreshProducts }) {
     setFormData({
       name: '',
       description: '',
-      price: 0,
-      stockQuantity: 0,
+      price: '',
+      stockQuantity: '',
       categoryId: categories[0]?.id ?? 0,
       imageUrl: '',
       imageUrls: [],
     });
+    setCategorySearch('');
+    setCategoryDropdownOpen(false);
     setMessage({ text: '', isError: false });
     setIsFormOpen(true);
   };
 
   const handleOpenEditForm = (prod) => {
     setEditingProduct(prod);
-    const existingImages = (prod.tables || []).map((img) => img.imageUrl || img.url || '').filter(Boolean);
+    const existingImages = (prod.tables || prod.images || prod.items || []).map((img) => img.imageUrl || img.url || '').filter(Boolean);
     const mainImg = existingImages[0] || '';
     setFormData({
       name: prod.name,
       description: prod.description || '',
-      price: prod.price,
-      stockQuantity: prod.stockQuantity,
+      price: String(prod.price ?? ''),
+      stockQuantity: String(prod.stockQuantity ?? ''),
       categoryId: prod.categoryId ?? categories[0]?.id ?? 0,
       imageUrl: mainImg,
       imageUrls: existingImages,
     });
+    setCategorySearch(categories.find((cat) => cat.id === (prod.categoryId ?? categories[0]?.id ?? 0))?.name || '');
+    setCategoryDropdownOpen(false);
     setMessage({ text: '', isError: false });
     setIsFormOpen(true);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.name || formData.price <= 0 || formData.stockQuantity < 0 || !formData.categoryId) {
+    if (!formData.name || formData.price === '' || Number(formData.price) <= 0 || formData.stockQuantity === '' || Number(formData.stockQuantity) < 0 || !formData.categoryId) {
       setMessage({ text: 'Iltimos, maydonlarni to\'g\'ri to\'ldiring va kategoriya tanlang.', isError: true });
       return;
     }
@@ -138,7 +229,7 @@ export default function AdminPanel({ products, onRefreshProducts }) {
           price: formData.price,
           stockQuantity: formData.stockQuantity,
           categoryId: formData.categoryId,
-          tables: formData.imageUrls.length > 0 ? formData.imageUrls.map((url, index) => ({
+          items: formData.imageUrls.length > 0 ? formData.imageUrls.map((url, index) => ({
             imageUrl: url,
             mainPic: index === 0,
             productId: editingProduct.id,
@@ -155,7 +246,7 @@ export default function AdminPanel({ products, onRefreshProducts }) {
           price: formData.price,
           stockQuantity: formData.stockQuantity,
           categoryId: formData.categoryId,
-          tables: formData.imageUrls.length > 0 ? formData.imageUrls.map((url, index) => ({
+          items: formData.imageUrls.length > 0 ? formData.imageUrls.map((url, index) => ({
             imageUrl: url,
             mainPic: index === 0,
             sortOrder: index + 1
@@ -195,35 +286,36 @@ export default function AdminPanel({ products, onRefreshProducts }) {
       {/* Header section with CTA */}
       <div style={{
         display: 'flex',
+        flexDirection: 'column',
         alignItems: 'center',
-        justifyContent: 'space-between',
+        justifyContent: 'center',
+        textAlign: 'center',
         marginBottom: '32px',
-        flexWrap: 'wrap',
         gap: '16px'
       }}>
-        <div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 800 }}>
+        <div style={{ maxWidth: '720px' }}>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 800, marginBottom: '8px' }}>
             Sotuvchi Boshqaruv Paneli
           </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-            Do'kondagi mahsulotlarni boshqarish, yangilarini qo'shish va sotuv ko'rsatkichlarini nazorat qilish.
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0 }}>
+            Mahsulotlarni boshqaring, yangilarini qo‘shing va mavjudlarni tezkor ravishda tahrirlang.
           </p>
         </div>
 
         {!isFormOpen && (
-          <button onClick={handleOpenAddForm} className="glow-btn">
+          <button onClick={handleOpenAddForm} className="glow-btn" style={{ minWidth: '220px' }}>
             <svg style={{ width: '18px', height: '18px', marginRight: '6px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
             </svg>
-            Yangi mahsulot qo'shish
+            Yangi mahsulot qo‘shish
           </button>
         )}
       </div>
 
       {isFormOpen ? (
         /* CREATE / EDIT FORM VIEW */
-        <div className="glass-panel" style={{ padding: '32px', maxWidth: '700px', margin: '0 auto' }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.4rem', marginBottom: '24px' }}>
+        <div className="glass-panel" style={{ padding: '36px', maxWidth: '760px', margin: '0 auto', borderRadius: '24px' }}>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.7rem', fontWeight: 700, marginBottom: '24px', textAlign: 'center' }}>
             {editingProduct ? `Tahrirlash: ${editingProduct.name}` : 'Yangi Mahsulot Ma\'lumotlari'}
           </h2>
 
@@ -242,9 +334,9 @@ export default function AdminPanel({ products, onRefreshProducts }) {
           )}
 
           <form onSubmit={handleSubmit}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }} className="form-grid">
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '22px' }} className="form-grid">
               
-              <div className="form-group" style={{ gridColumn: 'span 2' }}>
+              <div className="form-group" style={{ gridColumn: 'span 2', background: 'rgba(255,255,255,0.04)', padding: '16px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.08)' }}>
                 <label>Mahsulot nomi*</label>
                 <input 
                   type="text" 
@@ -257,7 +349,7 @@ export default function AdminPanel({ products, onRefreshProducts }) {
                 />
               </div>
 
-              <div className="form-group" style={{ gridColumn: 'span 2' }}>
+              <div className="form-group" style={{ gridColumn: 'span 2', background: 'rgba(255,255,255,0.04)', padding: '16px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.08)' }}>
                 <label>Batafsil tavsif</label>
                 <textarea 
                   name="description"
@@ -270,10 +362,11 @@ export default function AdminPanel({ products, onRefreshProducts }) {
                 />
               </div>
 
-              <div className="form-group">
+              <div className="form-group" style={{ background: 'rgba(255,255,255,0.04)', padding: '16px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.08)' }}>
                 <label>Narxi (UZS)*</label>
                 <input 
-                  type="number" 
+                  type="text"
+                  inputMode="numeric"
                   name="price"
                   className="form-input"
                   value={formData.price}
@@ -283,10 +376,11 @@ export default function AdminPanel({ products, onRefreshProducts }) {
                 />
               </div>
 
-              <div className="form-group">
+              <div className="form-group" style={{ background: 'rgba(255,255,255,0.04)', padding: '16px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.08)' }}>
                 <label>Ombordagi miqdor*</label>
                 <input 
-                  type="number" 
+                  type="text"
+                  inputMode="numeric"
                   name="stockQuantity"
                   className="form-input"
                   value={formData.stockQuantity}
@@ -296,40 +390,86 @@ export default function AdminPanel({ products, onRefreshProducts }) {
                 />
               </div>
 
-              <div className="form-group">
+              <div className="form-group" style={{ background: 'rgba(255,255,255,0.04)', padding: '16px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.08)' }}>
                 <label>Kategoriya*</label>
-                <select 
-                  name="categoryId"
-                  className="form-input"
-                  value={formData.categoryId}
-                  onChange={handleInputChange}
-                >
-                  {categories.length > 0 ? (
-                    categories.map((cat) => (
-                      <option key={cat.id} value={cat.id}>{cat.name}</option>
-                    ))
-                  ) : (
-                    <option value={0}>Kategoriya mavjud emas</option>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={categorySearch}
+                    onChange={handleCategorySearchChange}
+                    onFocus={() => setCategoryDropdownOpen(true)}
+                    placeholder="Kategoriya nomini yozing"
+                  />
+                  {categoryDropdownOpen && categories.length > 0 && (
+                    <div style={{
+                      position: 'absolute',
+                      top: 'calc(100% + 6px)',
+                      left: 0,
+                      right: 0,
+                      zIndex: 20,
+                      background: 'var(--bg-secondary)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '10px',
+                      maxHeight: '220px',
+                      overflowY: 'auto'
+                    }}>
+                      {categories
+                        .filter((cat) => cat.name.toLowerCase().includes(categorySearch.toLowerCase()))
+                        .map((cat) => (
+                          <button
+                            key={cat.id}
+                            type="button"
+                            onClick={() => handleCategorySelect(cat.id)}
+                            style={{
+                              display: 'block',
+                              width: '100%',
+                              textAlign: 'left',
+                              padding: '10px 12px',
+                              background: 'transparent',
+                              border: 'none',
+                              color: 'var(--text-main)',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            {cat.name}
+                          </button>
+                        ))}
+                    </div>
                   )}
-                </select>
-                <small style={{ color: 'var(--text-muted)', display: 'block', marginTop: '6px' }}>
-                  Kategoriya ro‘yxati backenddan olinadi. Yetkazib beruvchi esa server tomondan avtomatik aniqlanadi.
-                </small>
+                </div>
               </div>
 
-              <div className="form-group" style={{ gridColumn: 'span 2' }}>
-                <label>Rasm tanlash (bir nechta)</label>
-                <input 
+              <div className="form-group" style={{ gridColumn: 'span 2', background: 'rgba(255,255,255,0.04)', padding: '16px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <label>Rasm yuklash</label>
+                <label htmlFor="product-images" style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  padding: '12px 16px',
+                  borderRadius: '12px',
+                  border: '1px solid var(--accent-indigo)',
+                  background: 'linear-gradient(135deg, rgba(95,39,205,0.18), rgba(0,210,211,0.12))',
+                  color: 'var(--text-main)',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'transform 0.2s ease'
+                }}>
+                  <svg style={{ width: '18px', height: '18px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4-4m0 0L8 8m4-4v10" />
+                  </svg>
+                  Rasm tanlash
+                </label>
+                <input
+                  id="product-images"
                   type="file"
                   accept="image/*"
                   multiple
                   className="form-input"
                   onChange={handleImageUpload}
-                  style={{ padding: '10px 12px' }}
+                  style={{ display: 'none' }}
                 />
-                <small style={{ color: 'var(--text-muted)', display: 'block', marginTop: '6px' }}>
-                  Bir nechta rasmni bir vaqtning o‘zida tanlashingiz mumkin. Ular backendga array sifatida yuboriladi.
-                </small>
                 {formData.imageUrls.length > 0 && (
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: '10px', marginTop: '12px' }}>
                     {formData.imageUrls.map((url, index) => (
@@ -399,8 +539,9 @@ export default function AdminPanel({ products, onRefreshProducts }) {
                 </tr>
               ) : (
                 products.map((prod) => {
-                  const mainImage = prod.tables && prod.tables.length > 0
-                    ? prod.tables.find(t => t.mainPic)?.imageUrl || prod.tables[0].imageUrl
+                  const imageSources = (prod.tables || prod.images || prod.items || []).filter(Boolean);
+                  const mainImage = imageSources.length > 0
+                    ? (imageSources.find((item) => item.mainPic)?.imageUrl || imageSources.find((item) => item.imageUrl)?.imageUrl || imageSources.find((item) => item.url)?.url || imageSources[0]?.imageUrl || imageSources[0]?.url || imageSources[0])
                     : 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=100&auto=format&fit=crop&q=60';
                   
                   return (
