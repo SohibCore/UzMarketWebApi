@@ -1,4 +1,4 @@
-using FluentValidation;
+﻿using FluentValidation;
 using FluentValidation.AspNetCore;
 using MediatR;
 using Microsoft.AspNetCore.Authentication;
@@ -10,11 +10,22 @@ using UzMarket.RepositoryLayer.DataBase;
 using UzMarket.ServiceLayer.MediatorServices.AddressServices.Commands;
 using UzMarket.ServiceLayer.Security.AccountServices;
 using UzMarket.ServiceLayer.Security.AuthServices;
-using UzMarket.ServiceLayer.Services.RegisterServices.Interfaces;
-using UzMarket.ServiceLayer.Services.RegisterServices.Services;
+using UzMarket.ServiceLayer.Security.RegisterServices.Interfaces;
+using UzMarket.ServiceLayer.Security.RegisterServices.Services;
+using UzMarket.ServiceLayer.Services.Integration.Interfaces;
+using UzMarket.ServiceLayer.Services.Integration.Tax;
 using UzMarket.Validators.User;
+using UzMarket.WebApi;
 
 var builder = WebApplication.CreateBuilder(args);
+
+//Integrations
+AppSettings.Init(builder.Configuration.Get<AppSettings>());
+
+if (AppSettings.Instance.UzasboSetting is null)
+    throw new InvalidOperationException("Uzasbo appsettings.json'da topilmadi — bo'lim nomini tekshiring.");
+
+builder.Services.AddSingleton(AppSettings.Instance.UzasboSetting);
 
 // Swagger ishlash
 builder.Services.AddControllers();
@@ -36,7 +47,7 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     options.SlidingExpiration = true;
     options.Cookie.HttpOnly = true;
     options.Cookie.SameSite = SameSiteMode.Lax;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
 
     options.Events = new CookieAuthenticationEvents
     {
@@ -89,6 +100,7 @@ builder.Services.AddScoped<IEmailSender, MailKitEmailSender>();
 builder.Services.AddMemoryCache();
 builder.Services.AddScoped<ICacheService, MemoryCacheService>();
 builder.Services.AddScoped<IPasswordHasher, BCryptPasswordHasher>();
+builder.Services.AddHttpClient<IUzasboService, UzasboService>();
 
 //Mediatr
 builder.Services.AddMediatR(

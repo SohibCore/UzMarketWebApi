@@ -6,6 +6,62 @@ const FALLBACK_BASE_URLS = [
   BASE_URL === '/api' ? 'http://localhost:5089/api' : null,
 ].filter(Boolean);
 
+function normalizeRegisterPayload(userData, pinfl) {
+  const safeName = userData?.fullName?.trim() || '';
+  const safeShortName = userData?.shortName?.trim() || safeName.split(' ')[0] || 'User';
+  const safeAddress = userData?.address?.trim() || 'Uzbekistan';
+  const safePinfl = String(pinfl || userData?.pinfl || '').trim();
+
+  return {
+    dto: {
+      userName: userData?.userName?.trim(),
+      password: userData?.password,
+      fullName: safeName,
+      shortName: safeShortName,
+      phoneNumber: userData?.phoneNumber?.trim(),
+      address: safeAddress,
+      dateOfBirth: userData?.dateOfBirth,
+      passportSeries: userData?.passportSeries?.trim(),
+      email: userData?.email?.trim(),
+      pinfl: safePinfl,
+    },
+    pinfl: safePinfl,
+  };
+}
+
+async function parseErrorMessage(response) {
+  try {
+    const text = await response.text();
+    if (!text) return null;
+
+    try {
+      const parsed = JSON.parse(text);
+      if (typeof parsed === 'string') return parsed;
+      if (parsed?.message) return parsed.message;
+      if (parsed?.title) return parsed.title;
+      if (parsed?.detail) return parsed.detail;
+      if (parsed?.error) return parsed.error;
+      if (parsed?.errors) {
+        if (Array.isArray(parsed.errors)) return parsed.errors.join(', ');
+        if (typeof parsed.errors === 'string') return parsed.errors;
+        if (typeof parsed.errors === 'object') {
+          return Object.entries(parsed.errors)
+            .map(([field, messages]) => {
+              const text = Array.isArray(messages) ? messages.join(', ') : String(messages);
+              return `${field}: ${text}`;
+            })
+            .join(' | ');
+        }
+      }
+      return text;
+    } catch {
+      return text;
+    }
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Helper to perform fetch calls with credentials and JSON headers.
  */
@@ -14,7 +70,8 @@ async function request(endpoint, options = {}) {
   const timeoutMs = options.timeout ?? 8000;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-  const shouldRetryFallback = options.retry !== false;
+  const method = (options.method || 'GET').toString().toUpperCase();
+  const shouldRetryFallback = options.retry !== false && (method === 'GET' || method === 'HEAD');
 
   let lastError = null;
 
@@ -51,13 +108,7 @@ async function request(endpoint, options = {}) {
           continue;
         }
 
-        let errorMessage = `API Error: ${status}`;
-        try {
-          const text = await response.text();
-          errorMessage = text || errorMessage;
-        } catch (e) {
-          // ignore
-        }
+        const errorMessage = await parseErrorMessage(response) || `API Error: ${status}`;
         const err = new Error(errorMessage);
         err.status = status;
         throw err;
@@ -78,6 +129,10 @@ async function request(endpoint, options = {}) {
         const timeoutError = new Error('Request timed out');
         timeoutError.status = 504;
         throw timeoutError;
+      }
+
+      if (error?.status) {
+        throw error;
       }
 
       lastError = error;
@@ -106,10 +161,19 @@ export const api = {
         body: { userName, password },
       });
     },
-    register: async (userData) => {
+    register: async (userData, pinfl) => {
       return request('/Auth/Register', {
         method: 'POST',
-        body: userData,
+        retry: false,
+        timeout: 30000,
+        body: normalizeRegisterPayload(userData, pinfl),
+      });
+    },
+    verifyEmail: async (email, code) => {
+      return request('/Auth/VerifyEmail/verify-email', {
+        method: 'POST',
+        retry: false,
+        body: { email, code },
       });
     },
     me: async () => {
@@ -117,6 +181,13 @@ export const api = {
     },
     logout: async () => {
       return request('/Auth/Logout', { method: 'POST' });
+    },
+  },
+
+  // --- Uzasbo Endpoints ---
+  uzasbo: {
+    getPersonInfo: async (pinfl) => {
+      return request(`/Uzasbo/Get/${pinfl}`, { method: 'GET' });
     },
   },
 
@@ -199,22 +270,22 @@ export const api = {
     create: async (cartData) => {
       const itemsList = cartData.items || cartData.tables || [];
       const normalizedItems = itemsList.map(item => ({
-        productId: item.productId ?? item.id ?? 0,
+        productId: item.productId ?? item.ProductId ?? item.id ?? item.Id ?? 0,
         quantity: Number(item.quantity ?? 1),
       }));
 
       return request('/Cart/Create', {
         method: 'POST',
         body: {
-          Items: normalizedItems,
+          items: normalizedItems,
         },
       });
     },
     update: async (cartData) => {
       const itemsList = cartData.tables || cartData.items || [];
       const normalizedItems = itemsList.map(item => ({
-        id: item.id || null,
-        productId: item.productId,
+        id: item.id ?? item.Id ?? 0,
+        productId: item.productId ?? item.ProductId,
         quantity: Number(item.quantity ?? 1),
       }));
 
@@ -222,9 +293,9 @@ export const api = {
         method: 'PATCH',
         retry: false,
         body: {
-          Id: cartData.id,
-          StatusId: cartData.statusId || 2,
-          Items: normalizedItems,
+          id: cartData.id,
+          statusId: cartData.statusId,
+          items: normalizedItems,
         },
       });
     },

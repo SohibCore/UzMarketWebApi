@@ -2,25 +2,30 @@
 using Microsoft.EntityFrameworkCore;
 using UzMarket.RepositoryLayer.Entity;
 using UzMarket.RepositoryLayer.DataBase;
-using UzMarket.ServiceLayer.Services.RegisterServices.Interfaces;
 using UzMarket.RepositoryLayer.Dtos.UserDtos;
+using UzMarket.ServiceLayer.Security.RegisterServices.Interfaces;
+using OpenQA.Selenium;
+using UzMarket.ServiceLayer.ExternalServices.RegisterServices.Dtos;
+using UzMarket.ServiceLayer.Services.Integration.Interfaces;
 
-namespace UzMarket.ServiceLayer.Services.RegisterServices.Commands
+namespace UzMarket.ServiceLayer.Security.RegisterServices.Commands
 {
-    public record RegisterCommand(CreateUserDlDto dto) : IRequest<Unit>;
+    public record RegisterCommand(CreateUserDlDto dto, string pinfl) : IRequest<RegisterDto>;
 
-    public class RegisterCommandHandler : IRequestHandler<RegisterCommand, Unit>
+    public class RegisterCommandHandler : IRequestHandler<RegisterCommand, RegisterDto>
     {
         private readonly AppDbContext _context;
         private readonly IEmailSender _emailSender;
+        private readonly IUzasboService _uzasboService;
 
-        public RegisterCommandHandler(AppDbContext context, IEmailSender emailSender)
+        public RegisterCommandHandler(AppDbContext context, IEmailSender emailSender, IUzasboService uzasboService)
         {
             _context = context;
             _emailSender = emailSender;
+            _uzasboService = uzasboService;
         }
 
-        public async Task<Unit> Handle(RegisterCommand request, CancellationToken ct)
+        public async Task<RegisterDto> Handle(RegisterCommand request, CancellationToken ct)
         {
             var existingUser = await _context.Users
                 .FirstOrDefaultAsync(u => u.Email == request.dto.Email, ct);
@@ -33,15 +38,16 @@ namespace UzMarket.ServiceLayer.Services.RegisterServices.Commands
             var pending = await _context.PendingRegistrations
                 .FirstOrDefaultAsync(p => p.Email == request.dto.Email, ct);
 
+            var personInfo = await _uzasboService.GetPersonInfoAsync(request.pinfl, ct);
+
             if (pending is not null)
             {
-                // qayta urinish — eski yozuvni yangilaymiz
                 pending.Password = request.dto.Password;
-                pending.FullName = request.dto.FullName;
-                pending.ShortName = request.dto.ShortName;
-                pending.Pinfl = request.dto.Pinfl;
+                pending.FullName = personInfo.Name;
+                pending.ShortName = personInfo.ShortName;
+                pending.Pinfl = personInfo.PersonalNum;
                 pending.PhoneNumber = request.dto.PhoneNumber;
-                pending.Address = request.dto.Address;
+                pending.Address = personInfo.Address;
                 pending.DateOfBirth = request.dto.DateOfBirth;
                 pending.PassportSeries = request.dto.PassportSeries;
                 pending.UserName = request.dto.UserName;
@@ -74,7 +80,12 @@ namespace UzMarket.ServiceLayer.Services.RegisterServices.Commands
             await _emailSender.SendAsync(request.dto.Email, "Tasdiqlash kodi",
                 $"Sizning tasdiqlash kodingiz: {code}");
 
-            return Unit.Value;
+            return new RegisterDto
+            {
+                FulleName = personInfo.Name,
+                Address = personInfo.Address,
+                Pinfl = personInfo.PersonalNum,
+            };
         }
     }
 }

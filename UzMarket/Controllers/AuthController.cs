@@ -1,12 +1,13 @@
-﻿using System.Security.Claims;
+using MediatR;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
+using SendGrid.Helpers.Errors.Model;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication;
 using UzMarket.RepositoryLayer.Dtos.AuthDtos;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using UzMarket.ServiceLayer.Security.AuthServices;
-using UzMarket.ServiceLayer.Services.RegisterServices.Commands;
-using MediatR;
+using UzMarket.ServiceLayer.Security.RegisterServices.Commands;
 
 namespace UzMarket.WebApi.Controllers
 {
@@ -27,17 +28,32 @@ namespace UzMarket.WebApi.Controllers
         [HttpPost]
         public async Task<IActionResult> Register([FromBody] RegisterCommand command, CancellationToken cancel)
         {
-            await _mediator.Send(command, cancel);
-            return Ok(new { message = "Tasdiqlash kodi emailga yuborildi" });
+            try
+            {
+                await _mediator.Send(command, cancel);
+                return Ok(new { message = "Tasdiqlash kodi emailga yuborildi" });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Register ERROR: {ex}");
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [AllowAnonymous]
         [HttpPost]
         public async Task<IActionResult> Login([FromBody] LoginDto dto, CancellationToken cancel)
         {
-            var result = await _service.LoginAsync(dto, cancel);
-            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, result.ClaimsPrincipal);
-            return Ok(new { result.UserId, result.UserName, result.FullName });
+            try
+            {
+                var result = await _service.LoginAsync(dto, cancel);
+                await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, result.ClaimsPrincipal);
+                return Ok(new { result.UserId, result.UserName });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [HttpGet]
@@ -50,7 +66,6 @@ namespace UzMarket.WebApi.Controllers
             {
                 UserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value,
                 UserName = User.Identity!.Name,
-                FullName = User.FindFirst("FullName")?.Value
             });
         }
 
@@ -61,14 +76,30 @@ namespace UzMarket.WebApi.Controllers
             return Ok();
         }
 
+        [AllowAnonymous]
         [HttpPost("verify-email")]
-        public async Task<IActionResult> VerifyEmail(VerifyEmailCommand command, CancellationToken ct)
+        public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailCommand command, CancellationToken ct)
         {
-            var result = await _mediator.Send(command, ct);
-            await HttpContext.SignInAsync(
-                CookieAuthenticationDefaults.AuthenticationScheme,
-                result.ClaimsPrincipal);
-            return Ok(new { userId = result.UserId, userName = result.UserName, fullName = result.FullName });
+            try
+            {
+                var result = await _mediator.Send(command, ct);
+                await HttpContext.SignInAsync(
+                    CookieAuthenticationDefaults.AuthenticationScheme,
+                    result.ClaimsPrincipal);
+                return Ok(new { userId = result.UserId, userName = result.UserName });
+            }
+            catch (BadRequestException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (NotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
     }
 }

@@ -136,6 +136,50 @@ a {
   transform: translateY(0);
 }
 
+/* Floating label container */
+.floating-label {
+  position: relative;
+  margin-bottom: 24px;
+}
+
+.floating-label input {
+  width: 100%;
+  padding: 14px 12px;
+  background: var(--bg-glass);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  color: var(--text-main);
+  transition: var(--transition-fast);
+  font-size: 1rem;
+  outline: none;
+}
+
+.floating-label input:focus {
+  border-color: var(--accent-indigo);
+  box-shadow: 0 0 12px var(--accent-indigo-glow);
+}
+
+.floating-label label {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+  transition: all var(--transition-fast);
+  background: var(--bg-glass);
+  padding: 0 4px;
+}
+
+.floating-label input:focus + label,
+.floating-label input:not(:placeholder-shown) + label {
+  top: -8px;
+  font-size: 0.75rem;
+  color: var(--accent-indigo);
+}
+
+
+
 .sec-btn {
   background: var(--bg-tertiary);
   border: 1px solid var(--border-color);
@@ -219,3 +263,63 @@ a {
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
+/* Login Form Enhancements */
+.login-form {
+  animation: fadeIn var(--transition-normal);
+}
+
+.login-group {
+  margin-bottom: 24px;
+}
+
+.login-label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: 6px;
+}
+
+.login-input {
+  background-color: var(--bg-primary);
+  border: 2px solid var(--border-color);
+  padding: 14px 18px;
+  border-radius: var(--border-radius-sm);
+  font-size: 1rem;
+  color: var(--text-main);
+  transition: var(--transition-fast);
+}
+
+.login-input:focus {
+  border-color: var(--accent-indigo);
+  box-shadow: 0 0 12px rgba(95, 39, 205, 0.3);
+}
+
+/* Adjust button hover for premium feel */
+.glow-btn {
+  background: linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-rose) 100%);
+  box-shadow: var(--shadow-sm), 0 0 12px var(--accent-indigo-glow);
+}
+
+/* Glass‑morphism input */
+.glass-input {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: var(--text-main);
+  padding: 14px 18px;
+  border-radius: var(--border-radius-sm);
+  transition: var(--transition-fast);
+}
+
+.glass-input::placeholder {
+  color: var(--text-muted);
+}
+
+.glass-input:focus {
+  outline: none;
+  border-color: var(--accent-indigo);
+  box-shadow: 0 0 12px rgba(95, 39, 205, 0.3);
+}
+

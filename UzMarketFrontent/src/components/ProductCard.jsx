@@ -2,11 +2,14 @@ import React from 'react';
 
 export default function ProductCard({ product, onAddToCart, onSelect }) {
   const imageSources = (product.tables || product.images || product.items || []).filter(Boolean);
+  const productId = product.id ?? product.Id;
+  const stockQuantity = Number(product.stockQuantity ?? product.StockQuantity ?? 0);
+  const price = Number(product.price ?? product.Price ?? 0);
   const mainImage = imageSources.length > 0
     ? (imageSources.find((item) => item.mainPic)?.imageUrl || imageSources.find((item) => item.imageUrl)?.imageUrl || imageSources.find((item) => item.url)?.url || imageSources[0]?.imageUrl || imageSources[0]?.url || imageSources[0])
     : 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&auto=format&fit=crop&q=60';
 
-  const inStock = product.stockQuantity > 0;
+  const inStock = stockQuantity > 0;
 
   return (
     <div 
@@ -20,7 +23,7 @@ export default function ProductCard({ product, onAddToCart, onSelect }) {
         cursor: 'pointer',
         position: 'relative'
       }}
-      onClick={() => onSelect(product.id)}
+      onClick={() => onSelect(productId)}
       onMouseEnter={(e) => {
         e.currentTarget.style.transform = 'translateY(-6px)';
         e.currentTarget.style.boxShadow = 'var(--shadow-lg), 0 0 20px rgba(95, 39, 205, 0.15)';
@@ -102,7 +105,7 @@ export default function ProductCard({ product, onAddToCart, onSelect }) {
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Narxi</span>
             <span style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--accent-teal)' }}>
-              {product.price.toLocaleString('uz-UZ')} UZS
+              {price.toLocaleString('uz-UZ')} UZS
             </span>
           </div>
 

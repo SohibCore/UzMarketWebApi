@@ -6,7 +6,7 @@ using UzMarket.RepositoryLayer.Entity;
 using UzMarket.RepositoryLayer.DataBase;
 using UzMarket.RepositoryLayer.Dtos.AuthDtos;
 using UzMarket.RepositoryLayer.Dtos.UserDtos;
-using UzMarket.ServiceLayer.Services.RegisterServices.Commands;
+using UzMarket.ServiceLayer.Security.RegisterServices.Commands;
 
 namespace UzMarket.ServiceLayer.Security.AuthServices
 {
@@ -41,6 +41,7 @@ namespace UzMarket.ServiceLayer.Security.AuthServices
                 PhoneNumber = dto.PhoneNumber,
                 DateOfBirth = dto.DateOfBirth,
                 PassportSeries = dto.PassportSeries,
+
                 StatusId = (int)StatusIdConst.CREATED,
                 CreatedAt = DateTime.UtcNow
             };
@@ -51,7 +52,6 @@ namespace UzMarket.ServiceLayer.Security.AuthServices
             {
                 UserId = user.Id,
                 UserName = user.UserName,
-                FullName = user.FullName,
                 ClaimsPrincipal = BuildClaimsPrincipal(user)
             };
         }
@@ -71,7 +71,6 @@ namespace UzMarket.ServiceLayer.Security.AuthServices
             {
                 UserId = user.Id,
                 UserName = user.UserName,
-                FullName = user.FullName,
                 ClaimsPrincipal = BuildClaimsPrincipal(user)
             };
         }
@@ -83,6 +82,7 @@ namespace UzMarket.ServiceLayer.Security.AuthServices
                 new (ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new (ClaimTypes.Name, user.UserName),
                 new ("FullName", user.FullName),
+                new ("ShortName", user.ShortName)
             };
 
             var identity = new ClaimsIdentity(claims, "Cookies");

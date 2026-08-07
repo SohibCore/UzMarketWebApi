@@ -1,4 +1,4 @@
-﻿namespace UzMarket.ServiceLayer.Services.RegisterServices.Services
+﻿namespace UzMarket.ServiceLayer.Security.RegisterServices.Services
 {
     public class EmailSettings
     {

@@ -1,6 +1,6 @@
 ﻿using UzMarket.RepositoryLayer.Dtos.AuthDtos;
 using UzMarket.RepositoryLayer.Dtos.UserDtos;
-using UzMarket.ServiceLayer.Services.RegisterServices.Commands;
+using UzMarket.ServiceLayer.Security.RegisterServices.Commands;
 
 namespace UzMarket.ServiceLayer.Security.AuthServices
 {

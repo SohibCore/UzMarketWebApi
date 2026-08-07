@@ -33,6 +33,9 @@ namespace UzMarket.ServiceLayer.MediatorServices.CartServices.Commands
             cart.ModifiedUserId = _service.UserId;
             cart.ModifiedAt = DateTime.UtcNow;
 
+            var cartItem = request.dto.Items
+                .Select(x => x.ProductId);
+
             _context.CartItems.RemoveRange(cart.Items);
 
             cart.Items = request.dto.Items.Select(x => new CartItem

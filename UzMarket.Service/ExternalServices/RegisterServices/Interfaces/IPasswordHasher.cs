@@ -1,4 +1,4 @@
-﻿namespace UzMarket.ServiceLayer.Services.RegisterServices.Interfaces
+﻿namespace UzMarket.ServiceLayer.Security.RegisterServices.Interfaces
 {
     public interface IPasswordHasher
     {

@@ -6,7 +6,7 @@ using UzMarket.RepositoryLayer.Dtos.AuthDtos;
 using UzMarket.RepositoryLayer.Dtos.UserDtos;
 using UzMarket.ServiceLayer.Security.AuthServices;
 
-namespace UzMarket.ServiceLayer.Services.RegisterServices.Commands
+namespace UzMarket.ServiceLayer.Security.RegisterServices.Commands
 {
     public record VerifyEmailCommand(string Email, string Code) : IRequest<AuthResult>;
 

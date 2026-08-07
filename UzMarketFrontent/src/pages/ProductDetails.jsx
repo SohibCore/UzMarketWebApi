@@ -67,7 +67,9 @@ export default function ProductDetails({ productId, onAddToCart, onBack }) {
     );
   }
 
-  const inStock = product.stockQuantity > 0;
+  const stockQuantity = Number(product.stockQuantity ?? product.StockQuantity ?? 0);
+  const price = Number(product.price ?? product.Price ?? 0);
+  const inStock = stockQuantity > 0;
 
   return (
     <div style={{ padding: '0 16px 48px 16px' }} className="fade-in">
@@ -199,7 +201,7 @@ export default function ProductDetails({ productId, onAddToCart, onBack }) {
           >
             <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Mahsulot narxi:</span>
             <span style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--accent-teal)', fontFamily: 'var(--font-display)' }}>
-              {product.price.toLocaleString('uz-UZ')} UZS
+              {price.toLocaleString('uz-UZ')} UZS
             </span>
           </div>
 
@@ -216,7 +218,7 @@ export default function ProductDetails({ productId, onAddToCart, onBack }) {
             <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Holat:</span>
             {inStock ? (
               <span className="badge badge-success" style={{ fontWeight: 600 }}>
-                Sotuvda bor ({product.stockQuantity} dona)
+                Sotuvda bor ({stockQuantity} dona)
               </span>
             ) : (
               <span className="badge badge-danger" style={{ fontWeight: 600 }}>Tugagan</span>
@@ -256,7 +258,7 @@ export default function ProductDetails({ productId, onAddToCart, onBack }) {
                   {quantity}
                 </span>
                 <button 
-                  onClick={() => setQuantity(q => Math.min(product.stockQuantity, q + 1))}
+                  onClick={() => setQuantity(q => Math.min(stockQuantity, q + 1))}
                   style={{
                     background: 'transparent',
                     border: 'none',

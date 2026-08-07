@@ -1,6 +1,6 @@
-﻿using UzMarket.ServiceLayer.Services.RegisterServices.Interfaces;
+﻿using UzMarket.ServiceLayer.Security.RegisterServices.Interfaces;
 
-namespace UzMarket.ServiceLayer.Services.RegisterServices.Services
+namespace UzMarket.ServiceLayer.Security.RegisterServices.Services
 {
     public class BCryptPasswordHasher : IPasswordHasher
     {

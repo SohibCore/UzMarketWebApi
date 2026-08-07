@@ -15,11 +15,11 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\UzMarket.Core\UzMarket.Core.csproj" />
+	  <Folder Include="Migrations\" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Folder Include="Migrations\" />
+	  <ProjectReference Include="..\UzMarket.Core\UzMarket.Core.csproj" />
 	</ItemGroup>
 
 </Project>

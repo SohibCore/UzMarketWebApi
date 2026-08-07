@@ -3,7 +3,7 @@
     public class UpdateOrderDlDto
     {
         public long? Id { get; set; }
-        public long? OrderStatusId { get; set; }
+        public Nullable<long> OrderStatusId { get; set; }
         public int ShippingAddressId { get; set; }
         public DateTime OrderDate { get; set; }
 

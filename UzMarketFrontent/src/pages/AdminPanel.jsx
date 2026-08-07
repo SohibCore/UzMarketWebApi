@@ -7,6 +7,7 @@ export default function AdminPanel({ products, onRefreshProducts }) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ text: '', isError: false });
   const [categories, setCategories] = useState([]);
+  const [selectedMainCategoryId, setSelectedMainCategoryId] = useState(0);
   const [categorySearch, setCategorySearch] = useState('');
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
 
@@ -34,7 +35,8 @@ export default function AdminPanel({ products, onRefreshProducts }) {
         if (normalized.length > 0) {
           const mappedCategories = normalized.map((cat) => ({
             id: cat.id ?? cat.categoryId ?? 0,
-            name: cat.name ?? cat.title ?? 'Kategoriya'
+            name: cat.name ?? cat.title ?? 'Kategoriya',
+            parentId: cat.parentId ?? cat.parentCategoryId ?? cat.ParentId ?? 0
           }));
 
           setCategories(mappedCategories);
@@ -42,7 +44,7 @@ export default function AdminPanel({ products, onRefreshProducts }) {
             ...prev,
             categoryId: prev.categoryId && mappedCategories.some(cat => cat.id === prev.categoryId)
               ? prev.categoryId
-              : mappedCategories[0]?.id ?? 0,
+              : 0,
           }));
         } else {
           setCategories([]);
@@ -59,6 +61,10 @@ export default function AdminPanel({ products, onRefreshProducts }) {
   }, []);
 
   const sanitizeNumericValue = (value) => value.replace(/\D/g, '');
+  const mainCategories = categories.filter((cat) => !cat.parentId || Number(cat.parentId) === 0);
+  const childCategories = selectedMainCategoryId
+    ? categories.filter((cat) => Number(cat.parentId || 0) === selectedMainCategoryId)
+    : [];
 
   const readImageAsDataUrl = (file) => new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -72,7 +78,7 @@ export default function AdminPanel({ products, onRefreshProducts }) {
 
       const img = new Image();
       img.onload = () => {
-        const maxDimension = 1400;
+        const maxDimension = 1000;
         let width = img.width;
         let height = img.height;
 
@@ -91,9 +97,7 @@ export default function AdminPanel({ products, onRefreshProducts }) {
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, width, height);
 
-        const mimeType = file.type.includes('png') ? 'image/png' : 'image/jpeg';
-        const quality = mimeType === 'image/png' ? 1 : 0.78;
-        resolve(canvas.toDataURL(mimeType, quality));
+        resolve(canvas.toDataURL('image/jpeg', 0.72));
       };
 
       img.onerror = () => reject(new Error('Rasmni qayta ishlashda xatolik yuz berdi.'));
@@ -135,9 +139,15 @@ export default function AdminPanel({ products, onRefreshProducts }) {
     setCategoryDropdownOpen(true);
 
     if (!value) {
-      const selected = categories.find((cat) => cat.id === formData.categoryId);
-      setFormData((prev) => ({ ...prev, categoryId: selected?.id ?? 0 }));
+      setFormData((prev) => ({ ...prev, categoryId: 0 }));
     }
+  };
+
+  const handleMainCategorySelect = (e) => {
+    setSelectedMainCategoryId(Number(e.target.value));
+    setFormData((prev) => ({ ...prev, categoryId: 0 }));
+    setCategorySearch('');
+    setCategoryDropdownOpen(false);
   };
 
   const handleCategorySelect = (catId) => {
@@ -173,6 +183,43 @@ export default function AdminPanel({ products, onRefreshProducts }) {
     }
   };
 
+  const handleRemoveImage = (removeIndex) => {
+    setFormData(prev => {
+      const nextImageUrls = prev.imageUrls.filter((_, index) => index !== removeIndex);
+
+      return {
+        ...prev,
+        imageUrls: nextImageUrls,
+        imageUrl: nextImageUrls[0] || '',
+      };
+    });
+  };
+
+  const handleReplaceImage = async (e, replaceIndex) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const nextImageUrl = await readImageAsDataUrl(file);
+      setFormData(prev => {
+        const nextImageUrls = prev.imageUrls.map((url, index) => (
+          index === replaceIndex ? nextImageUrl : url
+        ));
+
+        return {
+          ...prev,
+          imageUrls: nextImageUrls,
+          imageUrl: nextImageUrls[0] || '',
+        };
+      });
+      setMessage({ text: 'Rasm yangilandi.', isError: false });
+    } catch (error) {
+      setMessage({ text: error.message || 'Rasmni almashtirishda xatolik yuz berdi.', isError: true });
+    } finally {
+      e.target.value = '';
+    }
+  };
+
   const handleOpenAddForm = () => {
     setEditingProduct(null);
     setFormData({
@@ -180,10 +227,11 @@ export default function AdminPanel({ products, onRefreshProducts }) {
       description: '',
       price: '',
       stockQuantity: '',
-      categoryId: categories[0]?.id ?? 0,
+      categoryId: 0,
       imageUrl: '',
       imageUrls: [],
     });
+    setSelectedMainCategoryId(0);
     setCategorySearch('');
     setCategoryDropdownOpen(false);
     setMessage({ text: '', isError: false });
@@ -194,16 +242,20 @@ export default function AdminPanel({ products, onRefreshProducts }) {
     setEditingProduct(prod);
     const existingImages = (prod.tables || prod.images || prod.items || []).map((img) => img.imageUrl || img.url || '').filter(Boolean);
     const mainImg = existingImages[0] || '';
+    const selectedCategoryId = prod.categoryId ?? 0;
+    const selectedCategory = categories.find((cat) => cat.id === selectedCategoryId);
+    const selectedParentId = Number(selectedCategory?.parentId || 0);
     setFormData({
       name: prod.name,
       description: prod.description || '',
       price: String(prod.price ?? ''),
       stockQuantity: String(prod.stockQuantity ?? ''),
-      categoryId: prod.categoryId ?? categories[0]?.id ?? 0,
+      categoryId: selectedCategoryId,
       imageUrl: mainImg,
       imageUrls: existingImages,
     });
-    setCategorySearch(categories.find((cat) => cat.id === (prod.categoryId ?? categories[0]?.id ?? 0))?.name || '');
+    setSelectedMainCategoryId(selectedParentId || selectedCategoryId || 0);
+    setCategorySearch(selectedParentId ? selectedCategory?.name || '' : '');
     setCategoryDropdownOpen(false);
     setMessage({ text: '', isError: false });
     setIsFormOpen(true);
@@ -229,6 +281,7 @@ export default function AdminPanel({ products, onRefreshProducts }) {
           price: formData.price,
           stockQuantity: formData.stockQuantity,
           categoryId: formData.categoryId,
+          supplierId: editingProduct.supplierId,
           items: formData.imageUrls.length > 0 ? formData.imageUrls.map((url, index) => ({
             imageUrl: url,
             mainPic: index === 0,
@@ -392,49 +445,96 @@ export default function AdminPanel({ products, onRefreshProducts }) {
 
               <div className="form-group" style={{ background: 'rgba(255,255,255,0.04)', padding: '16px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.08)' }}>
                 <label>Kategoriya*</label>
-                <div style={{ position: 'relative' }}>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={categorySearch}
-                    onChange={handleCategorySearchChange}
-                    onFocus={() => setCategoryDropdownOpen(true)}
-                    placeholder="Kategoriya nomini yozing"
-                  />
-                  {categoryDropdownOpen && categories.length > 0 && (
-                    <div style={{
-                      position: 'absolute',
-                      top: 'calc(100% + 6px)',
-                      left: 0,
-                      right: 0,
-                      zIndex: 20,
-                      background: 'var(--bg-secondary)',
-                      border: '1px solid var(--border-color)',
-                      borderRadius: '10px',
-                      maxHeight: '220px',
-                      overflowY: 'auto'
+                <div style={{
+                  display: 'grid',
+                  gap: '10px',
+                  padding: '12px',
+                  borderRadius: '14px',
+                  background: 'rgba(255,255,255,0.035)',
+                  border: '1px solid rgba(255,255,255,0.07)'
+                }}>
+                  <div style={{ position: 'relative' }}>
+                    <span style={{
+                      display: 'block',
+                      marginBottom: '6px',
+                      color: 'var(--text-muted)',
+                      fontSize: '0.78rem',
+                      fontWeight: 600
                     }}>
-                      {categories
-                        .filter((cat) => cat.name.toLowerCase().includes(categorySearch.toLowerCase()))
-                        .map((cat) => (
-                          <button
-                            key={cat.id}
-                            type="button"
-                            onClick={() => handleCategorySelect(cat.id)}
-                            style={{
-                              display: 'block',
-                              width: '100%',
-                              textAlign: 'left',
-                              padding: '10px 12px',
-                              background: 'transparent',
-                              border: 'none',
-                              color: 'var(--text-main)',
-                              cursor: 'pointer'
-                            }}
-                          >
-                            {cat.name}
-                          </button>
-                        ))}
+                      Asosiy bo'lim
+                    </span>
+                  <select
+                    className="form-input"
+                    value={selectedMainCategoryId}
+                    onChange={handleMainCategorySelect}
+                    required
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <option value={0}>Bo'limni tanlang</option>
+                    {mainCategories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                  </div>
+                  {selectedMainCategoryId > 0 && (
+                    <div style={{ position: 'relative', marginTop: '10px' }}>
+                      <span style={{
+                        display: 'block',
+                        marginBottom: '6px',
+                        color: 'var(--text-muted)',
+                        fontSize: '0.78rem',
+                        fontWeight: 600
+                      }}>
+                        Aniq kategoriya
+                      </span>
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={categorySearch}
+                        onChange={handleCategorySearchChange}
+                        onFocus={() => setCategoryDropdownOpen(true)}
+                        placeholder="Kategoriya nomini kiriting"
+                      />
+                      {categoryDropdownOpen && childCategories.length > 0 && (
+                        <div style={{
+                          position: 'absolute',
+                          top: 'calc(100% + 6px)',
+                          left: 0,
+                          right: 0,
+                          zIndex: 20,
+                          background: 'var(--bg-secondary)',
+                          border: '1px solid var(--border-color)',
+                          borderRadius: '12px',
+                          maxHeight: '220px',
+                          overflowY: 'auto',
+                          boxShadow: '0 18px 40px rgba(0,0,0,0.28)'
+                        }}>
+                          {childCategories
+                            .filter((cat) => cat.name.toLowerCase().includes(categorySearch.toLowerCase()))
+                            .map((cat) => (
+                              <button
+                                key={cat.id}
+                                type="button"
+                                onClick={() => handleCategorySelect(cat.id)}
+                                style={{
+                                  display: 'block',
+                                  width: '100%',
+                                  textAlign: 'left',
+                                  padding: '11px 12px',
+                                  background: 'transparent',
+                                  border: 'none',
+                                  color: 'var(--text-main)',
+                                  fontWeight: 600,
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                {cat.name}
+                              </button>
+                            ))}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -473,18 +573,89 @@ export default function AdminPanel({ products, onRefreshProducts }) {
                 {formData.imageUrls.length > 0 && (
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: '10px', marginTop: '12px' }}>
                     {formData.imageUrls.map((url, index) => (
-                      <img
+                      <div
                         key={`${url}-${index}`}
-                        src={url}
-                        alt={`Rasm ${index + 1}`}
                         style={{
-                          width: '100%',
+                          position: 'relative',
                           height: '110px',
-                          objectFit: 'cover',
                           borderRadius: '10px',
-                          border: '1px solid rgba(255,255,255,0.1)'
+                          overflow: 'hidden',
+                          border: '1px solid rgba(255,255,255,0.1)',
+                          background: 'rgba(255,255,255,0.04)'
                         }}
-                      />
+                      >
+                        <img
+                          src={url}
+                          alt={`Rasm ${index + 1}`}
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                            display: 'block'
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveImage(index)}
+                          aria-label="Rasmni olib tashlash"
+                          title="Rasmni olib tashlash"
+                          style={{
+                            position: 'absolute',
+                            top: '6px',
+                            right: '6px',
+                            width: '26px',
+                            height: '26px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            borderRadius: '50%',
+                            border: '1px solid rgba(255,255,255,0.25)',
+                            background: 'rgba(11, 15, 25, 0.82)',
+                            color: 'var(--text-main)',
+                            cursor: 'pointer',
+                            padding: 0,
+                            lineHeight: 1
+                          }}
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M18 6 6 18"></path>
+                            <path d="m6 6 12 12"></path>
+                          </svg>
+                        </button>
+                        <label
+                          htmlFor={`replace-product-image-${index}`}
+                          aria-label="Rasmni almashtirish"
+                          title="Rasmni almashtirish"
+                          style={{
+                            position: 'absolute',
+                            left: '6px',
+                            bottom: '6px',
+                            width: '28px',
+                            height: '28px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            borderRadius: '50%',
+                            border: '1px solid rgba(255,255,255,0.25)',
+                            background: 'rgba(11, 15, 25, 0.82)',
+                            color: 'var(--text-main)',
+                            cursor: 'pointer',
+                            padding: 0
+                          }}
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M12 20h9"></path>
+                            <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
+                          </svg>
+                        </label>
+                        <input
+                          id={`replace-product-image-${index}`}
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleReplaceImage(e, index)}
+                          style={{ display: 'none' }}
+                        />
+                      </div>
                     ))}
                   </div>
                 )}

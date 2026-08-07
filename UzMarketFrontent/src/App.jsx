@@ -9,6 +9,26 @@ import Orders from './pages/Orders';
 import { api } from './services/api';
 import './App.css';
 
+function normalizeCartItem(item) {
+  return {
+    id: item?.id ?? item?.Id ?? 0,
+    productId: item?.productId ?? item?.ProductId,
+    quantity: Number(item?.quantity ?? item?.Quantity ?? 1),
+  };
+}
+
+function normalizeCart(cart) {
+  if (!cart) return null;
+  const items = cart.items || cart.Items || cart.tables || [];
+
+  return {
+    id: cart.id ?? cart.Id,
+    userId: cart.userId ?? cart.UserId,
+    statusId: cart.statusId ?? cart.StatusId,
+    items: Array.isArray(items) ? items.map(normalizeCartItem) : [],
+  };
+}
+
 export default function App() {
   // Navigation & Page routing
   const [activePage, setActivePage] = useState('home'); // home, auth, orders, admin, details, checkout
@@ -98,20 +118,20 @@ export default function App() {
       try {
         const cartList = await api.cart.getList({ id: userId });
         const userCartList = Array.isArray(cartList)
-          ? cartList.filter(c => Number(c.userId) === Number(userId))
+          ? cartList
+              .map(normalizeCart)
+              .filter(c => !c?.userId || Number(c.userId) === Number(userId))
+              .sort((a, b) => Number(b.id || 0) - Number(a.id || 0))
           : [];
 
         let cartData = null;
 
         if (userCartList.length > 0) {
           const fullCart = await api.cart.get(userCartList[0].id);
-          cartData = {
-            id: fullCart?.id ?? userCartList[0].id,
-            items: fullCart?.items || fullCart?.tables || []
-          };
+          cartData = normalizeCart(fullCart) || userCartList[0];
         } else {
           const createRes = await api.cart.create({ userId, items: [] });
-          const cartId = typeof createRes === 'object' ? (createRes.id || createRes) : Number(createRes);
+          const cartId = typeof createRes === 'object' ? (createRes.id ?? createRes.Id) : Number(createRes);
           cartData = {
             id: cartId,
             items: []
@@ -127,7 +147,7 @@ export default function App() {
 
         try {
           const createRes = await api.cart.create({ userId, items: [] });
-          const cartId = typeof createRes === 'object' ? (createRes.id || createRes) : Number(createRes);
+          const cartId = typeof createRes === 'object' ? (createRes.id ?? createRes.Id) : Number(createRes);
           const cartData = {
             id: cartId,
             items: []
@@ -188,24 +208,32 @@ export default function App() {
 
     const pendingMutation = (async () => {
       setIsCartMutating(true);
+      try {
       let cart = activeCart;
-      if (!cart) {
+      if (!cart?.id) {
         cart = await loadUserCart(currentUser.id);
       }
 
-      if (!cart) {
+      if (!cart?.id) {
         alert("Savatni yaratib bo‘lmadi. Iltimos, qayta urinib ko‘ring.");
         return null;
       }
 
-      const currentItems = cart.items || cart.tables || [];
+      const productId = product.id ?? product.Id;
+      if (!productId) {
+        alert("Mahsulot ID topilmadi. Sahifani yangilab qayta urinib ko'ring.");
+        return null;
+      }
+
+      const stockQuantity = Number(product.stockQuantity ?? product.StockQuantity ?? 0);
+      const currentItems = (cart.items || cart.tables || []).map(normalizeCartItem);
       const updatedItems = [...currentItems];
-      const existingIndex = updatedItems.findIndex(item => item.productId === product.id);
+      const existingIndex = updatedItems.findIndex(item => Number(item.productId) === Number(productId));
 
       if (existingIndex > -1) {
         const newQty = (updatedItems[existingIndex].quantity || 1) + qty;
-        if (newQty > product.stockQuantity) {
-          alert(`Kechirasiz, omborda bor-yo'g'i ${product.stockQuantity} ta mahsulot mavjud.`);
+        if (stockQuantity > 0 && newQty > stockQuantity) {
+          alert(`Kechirasiz, omborda bor-yo'g'i ${stockQuantity} ta mahsulot mavjud.`);
           return null;
         }
         updatedItems[existingIndex] = {
@@ -214,16 +242,15 @@ export default function App() {
         };
       } else {
         updatedItems.push({
-          productId: product.id,
+          productId,
           quantity: qty
         });
       }
 
-      try {
         await api.cart.update({
           id: cart.id,
           items: updatedItems.map(t => ({
-            id: t.id || null,
+            id: t.id || 0,
             productId: t.productId,
             quantity: t.quantity
           }))
@@ -257,9 +284,9 @@ export default function App() {
       return;
     }
 
-    const currentItems = activeCart.items || activeCart.tables || [];
+    const currentItems = (activeCart.items || activeCart.tables || []).map(normalizeCartItem);
     const updatedItems = currentItems.map(item => {
-      if (item.productId === cartItem.productId) {
+      if (Number(item.productId) === Number(cartItem.productId)) {
         return { ...item, quantity: newQty };
       }
       return item;
@@ -288,8 +315,8 @@ export default function App() {
   const handleRemoveItem = async (cartItem) => {
     if (!activeCart) return;
 
-    const currentItems = activeCart.items || activeCart.tables || [];
-    const updatedItems = currentItems.filter(item => item.productId !== cartItem.productId);
+    const currentItems = (activeCart.items || activeCart.tables || []).map(normalizeCartItem);
+    const updatedItems = currentItems.filter(item => Number(item.productId) !== Number(cartItem.productId));
 
     try {
       await api.cart.update({

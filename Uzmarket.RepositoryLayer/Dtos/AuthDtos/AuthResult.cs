@@ -6,7 +6,6 @@ namespace UzMarket.RepositoryLayer.Dtos.AuthDtos
     {
         public long UserId { get; set; }
         public string UserName { get; set; } = null!;
-        public string FullName { get; set; } = null!;
         public ClaimsPrincipal ClaimsPrincipal { get; set; } = null!;
     }
 }

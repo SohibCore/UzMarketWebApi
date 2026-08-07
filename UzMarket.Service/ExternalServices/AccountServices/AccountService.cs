@@ -38,7 +38,7 @@ namespace UzMarket.ServiceLayer.Security.AccountServices
                     _accessor.HttpContext.User != null &&
                     _accessor.HttpContext.User.Identity != null)
                 {
-                    return _accessor.HttpContext.User.Identity.Name;
+                    return _accessor.HttpContext?.User?.Identity?.Name ?? "0";
                 }
 
                 return string.Empty;
@@ -65,5 +65,7 @@ namespace UzMarket.ServiceLayer.Security.AccountServices
                 return claim.Value;
             }
         }
+
+        public string ShortName => _accessor.HttpContext?.User?.FindFirst("ShortName")?.Value ?? string.Empty;
     }
 }

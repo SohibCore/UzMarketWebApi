@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using UzMarket.RepositoryLayer.DataBase;
 using UzMarket.RepositoryLayer.Dtos.ProductDtos;
+using UzMarket.RepositoryLayer.Entity;
 using UzMarket.ServiceLayer.Security.AccountServices;
 
 namespace UzMarket.ServiceLayer.MediatorServices.ProductServices.Commands
@@ -19,19 +20,37 @@ namespace UzMarket.ServiceLayer.MediatorServices.ProductServices.Commands
         }
         public async Task<bool> Handle(UpdateProductCommand request, CancellationToken cancellationToken)
         {
-            var product = await _context.Products.FirstOrDefaultAsync(x => x.Id == request.dto.Id && x.SupplierId == _service.UserId, cancellationToken);
+            var product = await _context.Products
+                .Include(x => x.Tables)
+                .FirstOrDefaultAsync(x => x.Id == request.dto.Id && x.SupplierId == _service.UserId, cancellationToken);
 
             if (product == null)
                 throw new Exception($"Product not found : {request.dto.Id}");
 
-            product.Name = request.dto.Name;
-            product.Description = request.dto.Description;
-            product.Price = request.dto.Price;
-            product.StockQuantity = request.dto.StockQuantity;
-            product.CategoryId = request.dto.CategoryId;
+            if (!string.IsNullOrWhiteSpace(request.dto.Name))
+                product.Name = request.dto.Name;
+            if (!string.IsNullOrWhiteSpace(request.dto.Description))
+                product.Description = request.dto.Description;
+            if (request.dto.Price.HasValue)
+                product.Price = request.dto.Price.Value;
+            if (request.dto.StockQuantity.HasValue)
+                product.StockQuantity = request.dto.StockQuantity.Value;
+            if (request.dto.CategoryId.HasValue)
+                product.CategoryId = request.dto.CategoryId.Value;
 
             product.ModifiedUserId = _service.UserId;
             product.ModifiedAt = DateTime.UtcNow;
+
+            if (request.dto.Items is not null)
+            {
+                _context.ProductImages.RemoveRange(product.Tables);
+                product.Tables = request.dto.Items.Select((x, index) => new ProductImage
+                {
+                    ImageUrl = x.ImageUrl ?? string.Empty,
+                    MainPic = index == 0,
+                    SortOrder = x.SortOrder ?? index + 1,
+                }).ToList();
+            }
 
             await _context.SaveChangesAsync(cancellationToken);
             return true;
