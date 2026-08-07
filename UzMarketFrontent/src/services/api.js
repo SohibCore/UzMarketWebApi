@@ -193,6 +193,14 @@ export const api = {
 
   // --- Product Endpoints ---
   products: {
+    getPaged: async (filters = {}) => {
+      const queryParams = new URLSearchParams();
+      queryParams.append('pageNumber', filters.pageNumber || 1);
+      queryParams.append('pageSize', filters.pageSize || 8);
+      if (filters.search) queryParams.append('search', filters.search);
+
+      return request(`/Product/GetProducts?${queryParams.toString()}`, { method: 'GET' });
+    },
     getList: async (filters = {}) => {
       const queryParams = new URLSearchParams();
       if (filters.name) queryParams.append('Name', filters.name);

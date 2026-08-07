@@ -41,7 +41,9 @@ export default function Home({
   loading, 
   searchQuery, 
   onAddToCart, 
-  onSelectProduct 
+  onSelectProduct,
+  pagination,
+  onPageChange,
 }) {
   const [selectedCategory, setSelectedCategory] = useState(0);
   const [filteredProducts, setFilteredProducts] = useState([]);
@@ -101,20 +103,16 @@ export default function Home({
         }
       }
 
-      result = result.filter((p) => selectedIds.has(p.categoryId));
-    }
-
-    // Filter by search query
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      result = result.filter(p => 
-        p.name.toLowerCase().includes(q) || 
-        (p.description && p.description.toLowerCase().includes(q))
-      );
+      result = result.filter((p) => selectedIds.has(p.categoryId ?? p.CategoryId));
     }
 
     setFilteredProducts(result);
-  }, [products, selectedCategory, searchQuery, categories]);
+  }, [products, selectedCategory, categories]);
+
+  const currentPage = pagination?.pageNumber || 1;
+  const totalPages = pagination?.totalPages || 1;
+  const pageNumbers = Array.from({ length: totalPages }, (_, index) => index + 1)
+    .filter((page) => page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1);
 
   return (
     <div style={{ padding: '0 16px' }} className="fade-in">
@@ -428,20 +426,82 @@ export default function Home({
             )}
           </div>
         ) : (
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
-            gap: '24px'
-          }}>
-            {filteredProducts.map((product) => (
-              <ProductCard 
-                key={product.id} 
-                product={product} 
-                onAddToCart={onAddToCart} 
-                onSelect={onSelectProduct}
-              />
-            ))}
-          </div>
+          <>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+              gap: '24px'
+            }}>
+              {filteredProducts.map((product) => (
+                <ProductCard 
+                  key={product.id ?? product.Id} 
+                  product={product} 
+                  onAddToCart={onAddToCart} 
+                  onSelect={onSelectProduct}
+                />
+              ))}
+            </div>
+
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '16px',
+              flexWrap: 'wrap',
+              marginTop: '28px',
+              padding: '14px 16px',
+              border: '1px solid var(--border-color)',
+              borderRadius: 'var(--border-radius-md)',
+              background: 'var(--bg-secondary)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className="sec-btn"
+                  onClick={() => onPageChange(currentPage - 1)}
+                  disabled={!pagination?.hasPreviousPage}
+                  style={{ padding: '8px 12px', opacity: pagination?.hasPreviousPage ? 1 : 0.45 }}
+                >
+                  Oldingi
+                </button>
+
+                {pageNumbers.map((page, index) => {
+                  const previousPage = pageNumbers[index - 1];
+                  const showGap = previousPage && page - previousPage > 1;
+
+                  return (
+                    <React.Fragment key={page}>
+                      {showGap && <span style={{ color: 'var(--text-muted)', padding: '0 2px' }}>...</span>}
+                      <button
+                        type="button"
+                        className={page === currentPage ? 'glow-btn' : 'sec-btn'}
+                        onClick={() => onPageChange(page)}
+                        style={{
+                          width: '38px',
+                          height: '38px',
+                          padding: 0,
+                          borderRadius: '50%'
+                        }}
+                        aria-current={page === currentPage ? 'page' : undefined}
+                      >
+                        {page}
+                      </button>
+                    </React.Fragment>
+                  );
+                })}
+
+                <button
+                  type="button"
+                  className="sec-btn"
+                  onClick={() => onPageChange(currentPage + 1)}
+                  disabled={!pagination?.hasNextPage}
+                  style={{ padding: '8px 12px', opacity: pagination?.hasNextPage ? 1 : 0.45 }}
+                >
+                  Keyingi
+                </button>
+              </div>
+            </div>
+          </>
         )}
       </div>
 

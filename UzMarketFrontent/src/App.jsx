@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Navbar from './components/Navbar';
 import CartDrawer from './components/CartDrawer';
 import Home from './pages/Home';
@@ -29,6 +29,23 @@ function normalizeCart(cart) {
   };
 }
 
+function normalizePagedProducts(data, fallbackPage = 1, fallbackPageSize = 8) {
+  const items = data?.items || data?.Items || [];
+  const pageNumber = Number(data?.pageNumber ?? data?.PageNumber ?? fallbackPage);
+  const totalPages = Number(data?.totalPages ?? data?.TotalPages ?? 1);
+  const totalCount = Number(data?.totalCount ?? data?.TotalCount ?? 0);
+
+  return {
+    items: Array.isArray(items) ? items : [],
+    pageNumber,
+    pageSize: fallbackPageSize,
+    totalPages: Number.isFinite(totalPages) && totalPages > 0 ? totalPages : 1,
+    totalCount: Number.isFinite(totalCount) ? totalCount : 0,
+    hasPreviousPage: Boolean(data?.hasPreviousPage ?? data?.HasPreviousPage ?? pageNumber > 1),
+    hasNextPage: Boolean(data?.hasNextPage ?? data?.HasNextPage ?? pageNumber < totalPages),
+  };
+}
+
 export default function App() {
   // Navigation & Page routing
   const [activePage, setActivePage] = useState('home'); // home, auth, orders, admin, details, checkout
@@ -42,12 +59,51 @@ export default function App() {
   // Shop Data States
   const [products, setProducts] = useState([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
+  const [productPagination, setProductPagination] = useState({
+    pageNumber: 1,
+    pageSize: 8,
+    totalPages: 1,
+    totalCount: 0,
+    hasPreviousPage: false,
+    hasNextPage: false,
+  });
   const [activeCart, setActiveCart] = useState(null); // { id, tables: [...] }
   const [cartLoading, setCartLoading] = useState(false);
   const [cartDrawerOpen, setCartDrawerOpen] = useState(false);
   const [isCartMutating, setIsCartMutating] = useState(false);
   const cartInitPromiseRef = useRef(null);
   const cartMutationPromiseRef = useRef(null);
+
+  // Fetch product catalog
+  const loadProducts = useCallback(async (options = {}) => {
+    const pageNumber = options.pageNumber ?? 1;
+    const pageSize = options.pageSize ?? 8;
+    const search = options.search ?? '';
+
+    setLoadingProducts(true);
+    try {
+      const data = await api.products.getPaged({ pageNumber, pageSize, search });
+      if (Array.isArray(data)) {
+        setProducts(data);
+        setProductPagination({
+          pageNumber,
+          pageSize,
+          totalPages: 1,
+          totalCount: data.length,
+          hasPreviousPage: false,
+          hasNextPage: false,
+        });
+      } else {
+        const paged = normalizePagedProducts(data, pageNumber, pageSize);
+        setProducts(paged.items);
+        setProductPagination(paged);
+      }
+    } catch (err) {
+      console.error("Error loading products:", err);
+    } finally {
+      setLoadingProducts(false);
+    }
+  }, []);
 
   // 1. Check user auth session on mount
   useEffect(() => {
@@ -76,7 +132,7 @@ export default function App() {
         }
       })();
 
-      const productsTask = loadProducts();
+      const productsTask = loadProducts({ pageNumber: 1, search: '' });
       await Promise.allSettled([authTask, productsTask]);
 
       if (!cancelled) {
@@ -89,21 +145,25 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [loadProducts]);
 
-  // Fetch product catalog
-  const loadProducts = async () => {
-    setLoadingProducts(true);
-    try {
-      const data = await api.products.getList();
-      if (Array.isArray(data)) {
-        setProducts(data);
-      }
-    } catch (err) {
-      console.error("Error loading products:", err);
-    } finally {
-      setLoadingProducts(false);
-    }
+  useEffect(() => {
+    if (checkingAuth) return;
+    const timeoutId = setTimeout(() => {
+      loadProducts({ pageNumber: 1, search: searchQuery });
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery, checkingAuth, loadProducts]);
+
+  const handleProductPageChange = (pageNumber) => {
+    const safePage = Math.min(Math.max(1, pageNumber), productPagination.totalPages || 1);
+    loadProducts({
+      pageNumber: safePage,
+      pageSize: productPagination.pageSize,
+      search: searchQuery,
+    });
+    document.getElementById('products-section')?.scrollIntoView({ behavior: 'smooth' });
   };
 
   // Fetch or create user cart
@@ -384,6 +444,8 @@ export default function App() {
               setSelectedProductId(id);
               setActivePage('details');
             }}
+            pagination={productPagination}
+            onPageChange={handleProductPageChange}
           />
         );
       case 'details':

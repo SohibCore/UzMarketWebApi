@@ -1,13 +1,12 @@
 using MediatR;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 using UzMarket.Core.Common;
-using UzMarket.RepositoryLayer.Dtos.ProductDtos;
-using UzMarket.RepositoryLayer.Entity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using UzMarket.ServiceLayer.Common.Commands;
-using UzMarket.ServiceLayer.MediatorServices.ProductServices.Commands;
+using UzMarket.RepositoryLayer.Dtos.ProductDtos;
 using UzMarket.ServiceLayer.MediatorServices.ProductServices.Dtos;
 using UzMarket.ServiceLayer.MediatorServices.ProductServices.Queries;
+using UzMarket.ServiceLayer.MediatorServices.ProductServices.Commands;
 
 namespace UzMarket.WebApi.Controllers
 {
